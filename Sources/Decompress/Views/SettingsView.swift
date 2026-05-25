@@ -6,50 +6,67 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
-            Form {
-                Toggle("Extract to source directory", isOn: Bindable(viewModel).autoExtractToSourceDir)
-                    .help("When enabled, archives are extracted into the same folder as the archive")
+            generalTab
+                .tabItem { Label("General", systemImage: "gear") }
+
+            formatsTab
+                .tabItem { Label("Formats", systemImage: "doc.zipper") }
+        }
+        .frame(width: 480, height: 300)
+    }
+
+    private var generalTab: some View {
+        Form {
+            Section {
+                Toggle("Extract to source directory by default", isOn: Bindable(viewModel).autoExtractToSourceDir)
+                    .help("When enabled, archives are extracted into the same folder as the archive source")
 
                 Toggle("Move archive to Trash after extraction", isOn: Bindable(viewModel).deleteArchiveAfterExtraction)
                     .help("Archives will be moved to Trash after successful extraction")
+            }
 
-                Divider()
-
-                HStack {
+            Section {
+                HStack(alignment: .firstTextBaseline) {
                     Text("Default output location")
                     Spacer()
-                    Text(viewModel.outputDirectoryURL?.path ?? "Same as source")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if !viewModel.autoExtractToSourceDir {
-                        Button("Choose...") {
-                            let panel = NSOpenPanel()
-                            panel.canChooseFiles = false
-                            panel.canChooseDirectories = true
-                            panel.canCreateDirectories = true
-                            panel.begin { response in
-                                if response == .OK {
-                                    viewModel.outputDirectoryURL = panel.url
+                    VStack(alignment: .trailing, spacing: 4) {
+                        if viewModel.autoExtractToSourceDir {
+                            Text("Same as source")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text(viewModel.outputDirectoryURL?.path ?? "Not set")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+
+                        if !viewModel.autoExtractToSourceDir {
+                            Button("Choose…") {
+                                let panel = NSOpenPanel()
+                                panel.canChooseFiles = false
+                                panel.canChooseDirectories = true
+                                panel.canCreateDirectories = true
+                                panel.message = "Select default extraction directory"
+                                panel.begin { response in
+                                    if response == .OK {
+                                        viewModel.outputDirectoryURL = panel.url
+                                    }
                                 }
                             }
+                            .controlSize(.small)
                         }
                     }
                 }
             }
-            .tabItem {
-                Label("General", systemImage: "gear")
-            }
-            .padding()
-
-            Form {
-                SupportedFormatsList()
-            }
-            .tabItem {
-                Label("Formats", systemImage: "doc.zipper")
-            }
-            .padding()
+            .disabled(viewModel.autoExtractToSourceDir)
         }
-        .frame(width: 450, height: 250)
+        .padding(20)
+    }
+
+    private var formatsTab: some View {
+        SupportedFormatsList()
+            .padding(20)
     }
 }
 

@@ -18,15 +18,27 @@ struct ExtractionProgressView: View {
             if case .extracting(let progress, let currentFile) = viewModel.extractionState {
                 ProgressView(value: progress, total: 1.0)
                     .frame(maxWidth: 300)
+                    .accessibilityLabel("Extraction progress")
+                    .accessibilityValue("\(Int(progress * 100)) percent")
 
                 Text(currentFile)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .accessibilityLabel("Current file: \(currentFile)")
 
                 Text("\(Int(progress * 100))%")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+
+            if viewModel.canCancel {
+                Button("Cancel", role: .cancel) {
+                    viewModel.cancelExtraction()
+                }
+                .buttonStyle(.bordered)
+                .keyboardShortcut(.escape)
             }
 
             Spacer()

@@ -8,17 +8,20 @@ struct DragDropView: View {
     @State private var detectedFormats: [URL: ArchiveFormat] = [:]
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             Spacer()
+
             dropIcon
             instructions
             selectButton
+            passwordPrompt
+
             if !viewModel.selectedURLs.isEmpty {
                 selectedFilesSection
-                passwordSection
                 extractionOptions
                 actionButtons
             }
+
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -39,6 +42,7 @@ struct DragDropView: View {
         Image(systemName: "doc.zipper")
             .font(.system(size: 64))
             .foregroundStyle(isTargeted ? Color.accentColor : .secondary)
+            .accessibilityHidden(true)
     }
 
     private var instructions: some View {
@@ -50,7 +54,12 @@ struct DragDropView: View {
             Text("ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            Text("Drag files onto this window  ·  Select Files to browse")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
+        .accessibilityLabel("Drop archives here. Supported formats: ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR")
     }
 
     private var selectButton: some View {
@@ -59,6 +68,13 @@ struct DragDropView: View {
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
+        .keyboardShortcut("o")
+        .accessibilityHint("Opens a file picker to choose archive files")
+    }
+
+    private var passwordPrompt: some View {
+        PasswordPromptView()
+            .frame(maxWidth: 320)
     }
 
     private var selectedFilesSection: some View {
@@ -67,24 +83,21 @@ struct DragDropView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            ForEach(viewModel.selectedURLs, id: \.self) { url in
-                FileRow(url: url, format: detectedFormats[url])
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(Array(viewModel.selectedURLs.enumerated()), id: \.element) { index, url in
+                        FileRowView(
+                            url: url,
+                            format: detectedFormats[url],
+                            onRemove: { viewModel.removeFile(at: index) }
+                        )
+                    }
+                }
             }
+            .frame(maxHeight: 200)
         }
-        .padding()
+        .padding(12)
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
-    }
-
-    private var passwordSection: some View {
-        VStack(spacing: 8) {
-            Toggle("Password-protected archive", isOn: Bindable(viewModel).isPasswordProtected)
-
-            if viewModel.isPasswordProtected {
-                SecureField("Enter password", text: Bindable(viewModel).password)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 300)
-            }
-        }
     }
 
     private var extractionOptions: some View {
@@ -101,11 +114,16 @@ struct DragDropView: View {
                 viewModel.clearFiles()
             }
             .buttonStyle(.bordered)
+            .keyboardShortcut(.escape)
+            .disabled(viewModel.selectedURLs.isEmpty)
 
             Button("Extract All") {
                 viewModel.extractAll()
             }
             .buttonStyle(.borderedProminent)
+            .keyboardShortcut("e")
+            .disabled(viewModel.selectedURLs.isEmpty)
+            .help("Begin extraction of all selected archives")
         }
     }
 
@@ -138,6 +156,7 @@ struct DragDropView: View {
             detectedFormats[url] = viewModel.detectFormat(for: url)
         }
         viewModel.addFiles(urls)
+        viewModel.checkForEncryptedArchives(urls)
     }
 
     private func handleDrop(providers: [NSItemProvider]) {
@@ -149,30 +168,8 @@ struct DragDropView: View {
                 Task { @MainActor in
                     detectedFormats[url] = viewModel.detectFormat(for: url)
                     viewModel.addFiles([url])
+                    viewModel.checkForEncryptedArchives([url])
                 }
-            }
-        }
-    }
-}
-
-private struct FileRow: View {
-    let url: URL
-    let format: ArchiveFormat?
-
-    var body: some View {
-        HStack {
-            Image(systemName: "doc")
-                .foregroundStyle(.secondary)
-            Text(url.lastPathComponent)
-                .font(.subheadline)
-                .lineLimit(1)
-            if let format {
-                Text(format.displayName)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(.quaternary, in: Capsule())
             }
         }
     }

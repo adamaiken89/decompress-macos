@@ -8,9 +8,36 @@ struct DecompressApp: App {
         WindowGroup {
             ContentView()
                 .environment(viewModel)
-                .frame(minWidth: 500, minHeight: 400)
+                .frame(minWidth: 520, minHeight: 420)
         }
-        .windowResizability(.contentSize)
+        .windowResizability(.contentMinSize)
+        .commands {
+            CommandGroup(after: .newItem) {
+                Button("Open…") {
+                    viewModel.showFilePicker = true
+                }
+                .keyboardShortcut("o")
+
+                Button("Extract All") {
+                    viewModel.extractAll()
+                }
+                .keyboardShortcut("e")
+                .disabled(viewModel.selectedURLs.isEmpty)
+            }
+
+            CommandGroup(replacing: .help) {
+                Button("Decompress Help") {
+                    viewModel.showHelp = true
+                }
+                .keyboardShortcut("?", modifiers: .command)
+            }
+        }
+
+        Window("Decompress Help", id: "help") {
+            HelpView()
+        }
+        .windowResizability(.contentMinSize)
+        .defaultPosition(.center)
 
         Settings {
             SettingsView()

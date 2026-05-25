@@ -11,6 +11,7 @@ enum ArchiveFormat: String, CaseIterable, Codable, Sendable {
     case tarXz
     case sevenZip
     case rar
+    case split
 
     var displayName: String {
         switch self {
@@ -43,6 +44,9 @@ enum ArchiveFormat: String, CaseIterable, Codable, Sendable {
 
         case .rar:
             "RAR"
+
+        case .split:
+            "SPLIT"
         }
     }
 
@@ -77,6 +81,9 @@ enum ArchiveFormat: String, CaseIterable, Codable, Sendable {
 
         case .rar:
             ["rar", "cbr"]
+
+        case .split:
+            ["001"]
         }
     }
 
@@ -111,6 +118,9 @@ enum ArchiveFormat: String, CaseIterable, Codable, Sendable {
 
         case .rar:
             [Data([0x52, 0x61, 0x72, 0x21, 0x1A, 0x07])]
+
+        case .split:
+            []
         }
     }
 }

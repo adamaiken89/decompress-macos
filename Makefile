@@ -1,3 +1,5 @@
+PRODUCT_NAME = Decompress
+
 .PHONY: build test lint clean release run
 
 build:
@@ -19,5 +21,7 @@ clean:
 release:
 	swift build -c release
 
-run:
-	swift run
+run: build
+	rm -rf "$(PRODUCT_NAME).app"
+	./scripts/make-app-bundle.sh ".build/debug/$(PRODUCT_NAME)"
+	open "$(PRODUCT_NAME).app"

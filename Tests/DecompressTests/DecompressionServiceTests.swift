@@ -53,6 +53,12 @@ final class DecompressionServiceTests: XCTestCase {
         XCTAssertEqual(format, .rar)
     }
 
+    func testDetectSplitByExtension() {
+        let url = URL(fileURLWithPath: "/tmp/archive.001")
+        let format = service.detectFormat(from: url)
+        XCTAssertEqual(format, .split)
+    }
+
     func testDetectFormatFromNonexistentFile() {
         let url = URL(fileURLWithPath: "/tmp/nonexistent.xyz")
         let format = service.detectFormat(from: url)
@@ -65,25 +71,130 @@ final class DecompressionServiceTests: XCTestCase {
         XCTAssertNil(format)
     }
 
-    func testUniqueDirectoryName() {
-        let fileManager = FileManager.default
-        let parent = URL(fileURLWithPath: "/tmp")
-        let unique = fileManager.uniqueDirectoryURL(in: parent, preferredName: "test")
-        XCTAssertEqual(unique.lastPathComponent, "test")
+    func testDetectFormatCaseInsensitiveUppercase() {
+        let url = URL(fileURLWithPath: "/tmp/ARCHIVE.ZIP")
+        let format = service.detectFormat(from: url)
+        XCTAssertEqual(format, .zip)
+    }
+
+    func testDetectFormatCaseInsensitiveMixedCase() {
+        let url = URL(fileURLWithPath: "/tmp/Archive.Tar.Gz")
+        let format = service.detectFormat(from: url)
+        XCTAssertEqual(format, .tarGz)
+    }
+
+    func testDetectFormatPrefersLongestExtension() {
+        let url = URL(fileURLWithPath: "/tmp/archive.tar.gz")
+        let format = service.detectFormat(from: url)
+        XCTAssertEqual(format, .tarGz)
+    }
+
+    func testDetectFormatFileWithoutExtension() {
+        let url = URL(fileURLWithPath: "/tmp/README")
+        let format = service.detectFormat(from: url)
+        XCTAssertNil(format)
+    }
+
+    func testDetectFormatDotfile() {
+        let url = URL(fileURLWithPath: "/tmp/.hidden")
+        let format = service.detectFormat(from: url)
+        XCTAssertNil(format)
     }
 
     func testSuggestedDestinationForZip() {
-        let fileManager = FileManager.default
         let source = URL(fileURLWithPath: "/Users/test/archive.zip")
-        let dest = fileManager.suggestedDestinationURL(for: source)
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
         XCTAssertEqual(dest.lastPathComponent, "archive")
         XCTAssertEqual(dest.deletingLastPathComponent().path, "/Users/test")
     }
 
     func testSuggestedDestinationForTarGz() {
-        let fileManager = FileManager.default
         let source = URL(fileURLWithPath: "/Users/test/archive.tar.gz")
-        let dest = fileManager.suggestedDestinationURL(for: source)
-        XCTAssertEqual(dest.lastPathComponent, "archive.tar")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForTgz() {
+        let source = URL(fileURLWithPath: "/Users/test/archive.tgz")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForTarBz2() {
+        let source = URL(fileURLWithPath: "/Users/test/archive.tar.bz2")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForTbz() {
+        let source = URL(fileURLWithPath: "/Users/test/archive.tbz")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForTarXz() {
+        let source = URL(fileURLWithPath: "/Users/test/archive.tar.xz")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForSevenZip() {
+        let source = URL(fileURLWithPath: "/Users/test/archive.7z")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForRar() {
+        let source = URL(fileURLWithPath: "/Users/test/archive.rar")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForSplit() {
+        let source = URL(fileURLWithPath: "/Users/test/archive.001")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForGzip() {
+        let source = URL(fileURLWithPath: "/Users/test/archive.gz")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForBzip2() {
+        let source = URL(fileURLWithPath: "/Users/test/archive.bz2")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForXz() {
+        let source = URL(fileURLWithPath: "/Users/test/archive.xz")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "archive")
+    }
+
+    func testSuggestedDestinationForCbr() {
+        let source = URL(fileURLWithPath: "/Users/test/comic.cbr")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "comic")
+    }
+
+    func testSuggestedDestinationForFileWithMultipleDots() {
+        let source = URL(fileURLWithPath: "/Users/test/my.file.name.zip")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.lastPathComponent, "my.file.name")
+    }
+
+    func testSuggestedDestinationPreservesParentDirectory() {
+        let source = URL(fileURLWithPath: "/Users/me/Documents/archive.zip")
+        let dest = FileManager.default.suggestedDestinationURL(for: source)
+        XCTAssertEqual(dest.deletingLastPathComponent().path, "/Users/me/Documents")
+    }
+
+    func testUniqueDirectoryName() {
+        let parent = URL(fileURLWithPath: "/tmp")
+        let unique = FileManager.default.uniqueDirectoryURL(in: parent, preferredName: "test")
+        XCTAssertEqual(unique.lastPathComponent, "test")
     }
 }

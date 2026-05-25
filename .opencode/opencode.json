@@ -3,19 +3,19 @@
   "command": {
     "lint": {
       "description": "Run SwiftLint on the project source",
-      "prompt": "Run swiftlint --strict on the project"
+      "template": "Run swiftlint --strict on the project"
     },
     "test": {
       "description": "Run project unit tests",
-      "prompt": "Run swift test to execute all unit tests"
+      "template": "Run swift test to execute all unit tests"
     },
     "build": {
       "description": "Build the project in release mode",
-      "prompt": "Run swift build -c release for a production build"
+      "template": "Run swift build -c release for a production build"
     },
     "check": {
       "description": "Run lint + test + build (CI gate)",
-      "prompt": "Run swiftlint --strict, then swift test, then swift build -c release sequentially"
+      "template": "Run swiftlint --strict, then swift test, then swift build -c release sequentially"
     }
   },
   "agent": {

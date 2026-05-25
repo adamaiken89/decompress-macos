@@ -8,6 +8,7 @@ final class DecompressViewModel {
     var selectedURLs: [URL] = []
     var outputDirectoryURL: URL?
     var showFilePicker = false
+    var showHelp = false
     var autoExtractToSourceDir = true
     var deleteArchiveAfterExtraction = false
     var isPasswordProtected = false
@@ -15,6 +16,7 @@ final class DecompressViewModel {
     var extractInPlace = false
 
     private let service = DecompressionService.shared
+    private var extractionTask: Task<Void, Never>?
 
     var isIdle: Bool {
         if case .idle = extractionState { return true }
@@ -22,7 +24,23 @@ final class DecompressViewModel {
     }
 
     var isBusy: Bool {
-        !isIdle
+        switch extractionState {
+        case .preparing, .extracting: true
+        case .idle, .completed, .failed: false
+        }
+    }
+
+    var canCancel: Bool {
+        switch extractionState {
+        case .preparing, .extracting: true
+        case .idle, .completed, .failed: false
+        }
+    }
+
+    func cancelExtraction() {
+        extractionTask?.cancel()
+        extractionTask = nil
+        extractionState = .idle
     }
 
     @MainActor
@@ -43,66 +61,91 @@ final class DecompressViewModel {
         service.detectFormat(from: url)
     }
 
-    @MainActor
-    func extractAll() {
-        guard !selectedURLs.isEmpty else { return }
-        extractionState = .preparing
-
-        let urls = selectedURLs
-        Task {
-            for url in urls {
-                await extractSingle(url)
-            }
+    func checkForEncryptedArchives(_ urls: [URL]) {
+        for url in urls where service.isZipEncrypted(url) {
+            isPasswordProtected = true
+            return
         }
     }
 
     @MainActor
-    private func extractSingle(_ url: URL) async {
-        guard let format = service.detectFormat(from: url) else {
-            extractionState = .failed("Could not detect format for \(url.lastPathComponent)")
-            return
-        }
+    func extractAll() {
+        guard !selectedURLs.isEmpty else { return }
 
-        let destination: URL
-        if extractInPlace {
-            destination = url.deletingLastPathComponent()
-        } else if let customOutput = outputDirectoryURL {
-            destination = FileManager.default.uniqueDirectoryURL(
-                in: customOutput,
-                preferredName: url.deletingPathExtension().lastPathComponent
-            )
-        } else {
-            destination = FileManager.default.suggestedDestinationURL(for: url)
-        }
-
+        let urls = selectedURLs
+        let useExtractInPlace = extractInPlace
+        let useAutoDir = autoExtractToSourceDir
+        let useOutputDir = outputDirectoryURL
         let usePassword = isPasswordProtected && !password.isEmpty ? password : nil
+        let shouldTrash = deleteArchiveAfterExtraction
 
-        do {
-            let result = try await service.extract(
-                sourceURL: url,
-                destinationURL: destination,
-                format: format,
-                password: usePassword,
-                progressHandler: { [weak self] progress, file in
-                    Task { @MainActor in
-                        self?.extractionState = .extracting(progress: progress, currentFile: file)
-                    }
+        extractionTask = Task {
+            extractionState = .preparing
+
+            for url in urls {
+                if Task.isCancelled { break }
+
+                guard let format = service.detectFormat(from: url) else {
+                    extractionState = .failed("Could not detect format for \(url.lastPathComponent)")
+                    extractionTask = nil
+                    return
                 }
-            )
 
-            if deleteArchiveAfterExtraction {
-                try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                let destination: URL
+                if useExtractInPlace {
+                    destination = url.deletingLastPathComponent()
+                } else if let customOutput = useOutputDir, !useAutoDir {
+                    destination = FileManager.default.uniqueDirectoryURL(
+                        in: customOutput,
+                        preferredName: url.deletingPathExtension().lastPathComponent
+                    )
+                } else {
+                    destination = FileManager.default.suggestedDestinationURL(for: url)
+                }
+
+                do {
+                    let result = try await service.extract(
+                        sourceURL: url,
+                        destinationURL: destination,
+                        format: format,
+                        password: usePassword,
+                        progressHandler: { [weak self] progress, file in
+                            Task { @MainActor in
+                                self?.extractionState = .extracting(progress: progress, currentFile: file)
+                            }
+                        }
+                    )
+
+                    if shouldTrash {
+                        try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                    }
+
+                    extractionState = .completed(result)
+                } catch {
+                    extractionState = .failed("\(url.lastPathComponent): \(error.localizedDescription)")
+                    extractionTask = nil
+                    return
+                }
             }
 
-            extractionState = .completed(result)
-        } catch {
-            extractionState = .failed(error.localizedDescription)
+            extractionTask = nil
         }
     }
 
     @MainActor
     func reset() {
         extractionState = .idle
+    }
+
+    @MainActor
+    func removeFile(at index: Int) {
+        guard index >= 0, index < selectedURLs.count else { return }
+        selectedURLs.remove(at: index)
+        if selectedURLs.isEmpty {
+            extractionState = .idle
+            password = ""
+            isPasswordProtected = false
+        }
     }
 
     @MainActor

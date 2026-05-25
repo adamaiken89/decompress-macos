@@ -16,6 +16,14 @@ A native macOS decompression tool built with SwiftUI — no ads, no subscription
 - macOS 15 (Sequoia) or later
 - Xcode 16+ (for development)
 
+## Dependencies
+
+This project has no runtime dependencies. All archives are handled via built-in system tools (`/usr/bin/ditto`, `/usr/bin/tar`, `/usr/bin/unzip`, `/usr/bin/unar`).
+
+For development:
+
+- **SwiftLint** — install via `brew install swiftlint` (only needed for linting)
+
 ## Build & Run
 
 ```bash

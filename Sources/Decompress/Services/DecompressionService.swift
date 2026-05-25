@@ -72,7 +72,7 @@ actor DecompressionService {
         case .xz:
             try await extractSingleFile(source: sourceURL, dest: destinationURL, tool: "unxz", args: ["-f", sourceURL.path])
 
-        case .sevenZip, .rar:
+        case .sevenZip, .rar, .split:
             if let password, !password.isEmpty {
                 try await extractWithUnar(source: sourceURL, dest: destinationURL, password: password, progress: progressHandler)
             } else {
@@ -93,6 +93,16 @@ actor DecompressionService {
             duration: duration,
             bytesExtracted: sourceSize
         )
+    }
+
+    nonisolated func isZipEncrypted(_ url: URL) -> Bool {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? handle.close() }
+        let header = handle.readData(ofLength: 30)
+        guard header.count >= 8,
+              header[0..<4] == ArchiveFormat.zip.magicBytes[0]
+        else { return false }
+        return (header[6] & 0x01) != 0
     }
 
     nonisolated func detectFormat(from url: URL) -> ArchiveFormat? {
@@ -176,10 +186,13 @@ actor DecompressionService {
         switch format {
         case .tarGz:
             process.arguments = ["-xzf", source.path, "-C", dest.path]
+
         case .tarBz2:
             process.arguments = ["-xjf", source.path, "-C", dest.path]
+
         case .tarXz:
             process.arguments = ["-xJf", source.path, "-C", dest.path]
+
         default:
             process.arguments = ["-xf", source.path, "-C", dest.path]
         }
@@ -199,16 +212,29 @@ actor DecompressionService {
         try await runProcess(process, progress: { _, _ in })
     }
 
+    private static let unarURL: URL? = {
+        let paths = ["/opt/homebrew/bin/unar", "/usr/local/bin/unar", "/usr/bin/unar"]
+        for path in paths {
+            if FileManager.default.fileExists(atPath: path) {
+                return URL(fileURLWithPath: path)
+            }
+        }
+        return nil
+    }()
+
     private func extractWithUnar(
         source: URL,
         dest: URL,
         password: String? = nil,
         progress: @Sendable @escaping (Double, String) -> Void
     ) async throws {
+        guard let unarURL = Self.unarURL else {
+            throw ServiceError.processError("unar is not installed. Install it with: brew install unar")
+        }
         progress(0.2, "Extracting...")
 
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/unar")
+        process.executableURL = unarURL
 
         var args = ["-o", dest.path, "-q"]
         if let password, !password.isEmpty {

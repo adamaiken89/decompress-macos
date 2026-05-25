@@ -15,6 +15,20 @@ extension FileManager {
     }
 
     func suggestedDestinationURL(for sourceURL: URL) -> URL {
+        let path = sourceURL.path.lowercased()
+        let allExtensions = ArchiveFormat.allCases
+            .flatMap { $0.fileExtensions }
+            .sorted { $0.count > $1.count }
+
+        for ext in allExtensions {
+            let suffix = ".\(ext)"
+            if path.hasSuffix(suffix) {
+                let name = String(path.dropLast(suffix.count))
+                let parent = sourceURL.deletingLastPathComponent()
+                return uniqueDirectoryURL(in: parent, preferredName: URL(fileURLWithPath: name).lastPathComponent)
+            }
+        }
+
         let sourceName = sourceURL
             .deletingPathExtension()
             .lastPathComponent
