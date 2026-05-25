@@ -15,6 +15,8 @@ struct DragDropView: View {
             selectButton
             if !viewModel.selectedURLs.isEmpty {
                 selectedFilesSection
+                passwordSection
+                extractionOptions
                 actionButtons
             }
             Spacer()
@@ -71,6 +73,26 @@ struct DragDropView: View {
         }
         .padding()
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var passwordSection: some View {
+        VStack(spacing: 8) {
+            Toggle("Password-protected archive", isOn: Bindable(viewModel).isPasswordProtected)
+
+            if viewModel.isPasswordProtected {
+                SecureField("Enter password", text: Bindable(viewModel).password)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 300)
+            }
+        }
+    }
+
+    private var extractionOptions: some View {
+        HStack(spacing: 16) {
+            Toggle("Extract in place", isOn: Bindable(viewModel).extractInPlace)
+                .help("Extract files directly into the source directory instead of a subfolder")
+        }
+        .font(.caption)
     }
 
     private var actionButtons: some View {

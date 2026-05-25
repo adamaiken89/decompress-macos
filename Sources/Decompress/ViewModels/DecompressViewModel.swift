@@ -10,6 +10,9 @@ final class DecompressViewModel {
     var showFilePicker = false
     var autoExtractToSourceDir = true
     var deleteArchiveAfterExtraction = false
+    var isPasswordProtected = false
+    var password = ""
+    var extractInPlace = false
 
     private let service = DecompressionService.shared
 
@@ -61,7 +64,9 @@ final class DecompressViewModel {
         }
 
         let destination: URL
-        if let customOutput = outputDirectoryURL {
+        if extractInPlace {
+            destination = url.deletingLastPathComponent()
+        } else if let customOutput = outputDirectoryURL {
             destination = FileManager.default.uniqueDirectoryURL(
                 in: customOutput,
                 preferredName: url.deletingPathExtension().lastPathComponent
@@ -70,11 +75,14 @@ final class DecompressViewModel {
             destination = FileManager.default.suggestedDestinationURL(for: url)
         }
 
+        let usePassword = isPasswordProtected && !password.isEmpty ? password : nil
+
         do {
             let result = try await service.extract(
                 sourceURL: url,
                 destinationURL: destination,
                 format: format,
+                password: usePassword,
                 progressHandler: { [weak self] progress, file in
                     Task { @MainActor in
                         self?.extractionState = .extracting(progress: progress, currentFile: file)
@@ -101,5 +109,7 @@ final class DecompressViewModel {
     func clearFiles() {
         selectedURLs.removeAll()
         extractionState = .idle
+        password = ""
+        isPasswordProtected = false
     }
 }

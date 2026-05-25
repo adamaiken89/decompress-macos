@@ -7,6 +7,7 @@ actor DecompressionService {
         case extractionFailed(String)
         case destinationCreationFailed(URL)
         case processError(String)
+        case passwordRequired
 
         var errorDescription: String? {
             switch self {
@@ -24,6 +25,9 @@ actor DecompressionService {
 
             case .processError(let msg):
                 "Process error: \(msg)"
+
+            case .passwordRequired:
+                "Password is required for this archive"
             }
         }
     }
@@ -35,6 +39,7 @@ actor DecompressionService {
         sourceURL: URL,
         destinationURL: URL,
         format: ArchiveFormat,
+        password: String? = nil,
         progressHandler: @Sendable @escaping (Double, String) -> Void
     ) async throws -> ExtractionResult {
         guard FileManager.default.fileExists(atPath: sourceURL.path) else {
@@ -49,7 +54,11 @@ actor DecompressionService {
 
         switch format {
         case .zip:
-            try await extractZip(source: sourceURL, dest: destinationURL, progress: progressHandler)
+            if let password, !password.isEmpty {
+                try await extractZipWithPassword(source: sourceURL, dest: destinationURL, password: password, progress: progressHandler)
+            } else {
+                try await extractZip(source: sourceURL, dest: destinationURL, progress: progressHandler)
+            }
 
         case .tar, .tarGz, .tarBz2, .tarXz:
             try await extractTar(source: sourceURL, dest: destinationURL, format: format, progress: progressHandler)
@@ -63,11 +72,12 @@ actor DecompressionService {
         case .xz:
             try await extractSingleFile(source: sourceURL, dest: destinationURL, tool: "unxz", args: ["-f", sourceURL.path])
 
-        case .sevenZip:
-            try await extractWithUnar(source: sourceURL, dest: destinationURL, progress: progressHandler)
-
-        case .rar:
-            try await extractWithUnar(source: sourceURL, dest: destinationURL, progress: progressHandler)
+        case .sevenZip, .rar:
+            if let password, !password.isEmpty {
+                try await extractWithUnar(source: sourceURL, dest: destinationURL, password: password, progress: progressHandler)
+            } else {
+                try await extractWithUnar(source: sourceURL, dest: destinationURL, progress: progressHandler)
+            }
         }
 
         let duration = Date().timeIntervalSince(startTime)
@@ -136,7 +146,20 @@ actor DecompressionService {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
         process.arguments = ["-x", "-k", source.path, dest.path]
+        try await runProcess(process, progress: progress)
+    }
 
+    private func extractZipWithPassword(
+        source: URL,
+        dest: URL,
+        password: String,
+        progress: @Sendable @escaping (Double, String) -> Void
+    ) async throws {
+        progress(0.2, "Extracting encrypted ZIP...")
+        // unzip -P <password> <file> -d <dest>
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+        process.arguments = ["-P", password, "-o", source.path, "-d", dest.path]
         try await runProcess(process, progress: progress)
     }
 
@@ -153,13 +176,10 @@ actor DecompressionService {
         switch format {
         case .tarGz:
             process.arguments = ["-xzf", source.path, "-C", dest.path]
-
         case .tarBz2:
             process.arguments = ["-xjf", source.path, "-C", dest.path]
-
         case .tarXz:
             process.arguments = ["-xJf", source.path, "-C", dest.path]
-
         default:
             process.arguments = ["-xf", source.path, "-C", dest.path]
         }
@@ -176,20 +196,26 @@ actor DecompressionService {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/\(tool)")
         process.arguments = args
-
         try await runProcess(process, progress: { _, _ in })
     }
 
     private func extractWithUnar(
         source: URL,
         dest: URL,
+        password: String? = nil,
         progress: @Sendable @escaping (Double, String) -> Void
     ) async throws {
-        progress(0.2, "Extracting (unar)...")
+        progress(0.2, "Extracting...")
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/unar")
-        process.arguments = ["-o", dest.path, "-q", source.path]
+
+        var args = ["-o", dest.path, "-q"]
+        if let password, !password.isEmpty {
+            args.append(contentsOf: ["-p", password])
+        }
+        args.append(source.path)
+        process.arguments = args
 
         try await runProcess(process, progress: progress)
     }
