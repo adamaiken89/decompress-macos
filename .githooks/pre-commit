@@ -1,0 +1,26 @@
+#!/bin/bash
+# Pre-commit hook for decompress-macos
+# Runs linter and build before allowing a commit.
+# Skip with: git commit --no-verify
+
+echo "🔍 Running pre-commit checks..."
+
+echo ""
+echo "--- SwiftLint ---"
+if ! swiftlint --strict 2>/dev/null; then
+    echo "❌ SwiftLint found violations. Fix them before committing."
+    echo "   Run 'swiftlint --fix' to auto-fix some issues."
+    exit 1
+fi
+echo "   ✅ Lint passed"
+
+echo ""
+echo "--- Swift Build ---"
+if ! swift build 2>/dev/null; then
+    echo "❌ Build failed. Fix compilation errors before committing."
+    exit 1
+fi
+echo "   ✅ Build passed"
+
+echo ""
+echo "✅ All pre-commit checks passed!"

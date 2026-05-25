@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SWIFTLINT_VERSION: "0.63.2"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install SwiftLint
+        run: |
+          curl -sL "https://github.com/realm/SwiftLint/releases/download/$SWIFTLINT_VERSION/portable_swiftlint.zip" -o /tmp/swiftlint.zip
+          unzip -o /tmp/swiftlint.zip swiftlint -d /usr/local/bin
+          chmod +x /usr/local/bin/swiftlint
+      - name: Run SwiftLint
+        run: swiftlint --strict
+
+  test:
+    name: Test
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+      - name: Build
+        run: swift build
+      - name: Run tests
+        run: swift test
+
+  release:
+    name: Build + Package
+    runs-on: macos-15
+    timeout-minutes: 15
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+      - name: Build release (arm64)
+        run: swift build -c release
+      - name: Create .app bundle
+        run: bash scripts/make-app-bundle.sh .build/release/Decompress
+      - name: Package as ZIP
+        run: zip -r "Decompress-macOS.zip" "Decompress.app"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Decompress-macOS
+          path: Decompress-macOS.zip
