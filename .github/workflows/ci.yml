@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint + Build + Test
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+      - name: Check formatting
+        run: make format-check
+      - name: Build (strict concurrency)
+        run: make build-strict
+      - name: Run tests with coverage
+        run: swift test --enable-code-coverage
+      - name: Generate coverage report
+        run: |
+          xcrun llvm-cov report \
+            .build/debug/DecompressPackageTests.xctest/Contents/MacOS/DecompressPackageTests \
+            --ignore-filename-regex='Tests/|.build/' \
+            --instr-profile=.build/debug/codecov/default.profdata \
+            --use-color
+
+  release:
+    name: Build + Package
+    runs-on: macos-15
+    timeout-minutes: 15
+    needs: [check]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+      - name: Derive version
+        id: version
+        run: |
+          REF_NAME="${{ github.ref_name }}"
+          if echo "$REF_NAME" | grep -q '^v[0-9]\+\.[0-9]\+\.[0-9]\+$'; then
+            VERSION="${REF_NAME#v}"
+            echo "channel=release" >> "$GITHUB_OUTPUT"
+          else
+            VERSION="${GITHUB_SHA:0:7}"
+            echo "channel=dev" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+      - name: Build release
+        run: swift build -c release
+      - name: Create .app bundle
+        run: |
+          APP_VERSION="${{ steps.version.outputs.version }}" \
+          APP_BUILD_NUMBER="${{ steps.version.outputs.build }}" \
+          bash scripts/make-app-bundle.sh .build/release/Decompress
+      - name: Package as ZIP
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          zip -r "Decompress-${VERSION}.zip" "Decompress.app"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Decompress-${{ steps.version.outputs.version }}
+          path: Decompress-${{ steps.version.outputs.version }}.zip
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release create "${{ github.ref_name }}" \
+            --title "Decompress $VERSION" \
+            --notes "See the [changelog](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for details." \
+            "Decompress-${VERSION}.zip"

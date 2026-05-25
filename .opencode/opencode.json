@@ -1,0 +1,78 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "command": {
+    "lint": {
+      "description": "Run SwiftLint on the project source",
+      "template": "Run swiftlint --strict on the project"
+    },
+    "lint-fix": {
+      "description": "Auto-fix SwiftLint violations",
+      "template": "Run swiftlint --fix on the project"
+    },
+    "format": {
+      "description": "Auto-format Swift source files with swift-format",
+      "template": "Run swift-format format --in-place --recursive Sources/ Tests/"
+    },
+    "format-check": {
+      "description": "Check Swift formatting without modifying files",
+      "template": "Run swift-format lint --recursive Sources/ Tests/"
+    },
+    "test": {
+      "description": "Run project unit tests",
+      "template": "Run swift test to execute all unit tests"
+    },
+    "test-coverage": {
+      "description": "Run tests with code coverage and generate report",
+      "template": "Run swift test --enable-code-coverage, then llvm-cov report"
+    },
+    "build": {
+      "description": "Build the project in debug mode",
+      "template": "Run swift build"
+    },
+    "build-strict": {
+      "description": "Build with strict concurrency checking",
+      "template": "Run swift build -Xswiftc -strict-concurrency=complete"
+    },
+    "release": {
+      "description": "Build the project in release mode",
+      "template": "Run swift build -c release for a production build"
+    },
+    "check": {
+      "description": "Run full CI gate locally: lint, format check, strict build, tests with coverage",
+      "template": "Run swiftlint --strict, swift-format lint, swift build -Xswiftc -strict-concurrency=complete, swift test --enable-code-coverage"
+    }
+  },
+  "agent": {
+    "swift-dev": {
+      "description": "Swift/SwiftUI development assistant for the decompress-macos project. Use when writing Swift code, fixing build errors, or refactoring.",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow"
+      },
+      "prompt": "You are a Swift developer assistant specialized in the decompress-macos project — a native macOS archive extraction tool built with SwiftUI. You know the project structure inside out.\n\nKey project facts:\n- MVVM architecture with @Observable view models\n- DecompressionService is an actor that wraps system tools (ditto, tar, gunzip, unar) via Process\n- Format detection uses file extension and magic bytes\n- Tests use XCTest (require full Xcode to run locally)\n- SwiftLint enforces code style\n- swift-format enforces formatting style\n- Strict concurrency checking (-Xswiftc -strict-concurrency=complete) is mandatory\n- Code coverage is generated via llvm-cov\n\nAlways:\n1. Run `swift build -Xswiftc -strict-concurrency=complete` to verify your changes compile before presenting them\n2. Follow the existing code style (no comments, MVVM pattern, actor isolation)\n3. Suggest tests for any new functionality\n4. Reference the exact file path and line number when discussing issues"
+    },
+    "review": {
+      "description": "Code reviewer for pull requests and changes",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6",
+      "permission": {
+        "edit": "deny",
+        "bash": "allow"
+      },
+      "prompt": "You are a strict code reviewer for the decompress-macos project. Review code for:\n1. Correctness — does the logic handle edge cases?\n2. Swift conventions — no force unwrapping, proper error handling, Sendable conformance\n3. SwiftLint compliance — check against .swiftlint.yml rules\n4. swift-format compliance — check formatting style\n5. Strict concurrency — verify @MainActor, Sendable, and actor isolation are correct\n6. MVVM architecture — views should not contain business logic\n7. Actor isolation — DecompressionService is an actor, ensure proper async/await usage\n8. Performance — avoid unnecessary copies, use value types where appropriate\n\nBe specific and cite exact line numbers."
+    }
+  },
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp"],
+      "enabled": false,
+      "env": {}
+    }
+  },
+  "skills": {
+    "paths": [".opencode/skill"]
+  }
+}

@@ -1,0 +1,148 @@
+// ContentView
+"Clear" = "Clear";
+"Reset to start over" = "Reset to start over";
+"Help" = "Help";
+"Open usage guide" = "Open usage guide";
+
+// DragDropView
+"Drop archives here" = "Drop archives here";
+"ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR" = "ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR";
+"Drag files onto this window  ·  Select Files to browse" = "Drag files onto this window  ·  Select Files to browse";
+"For split archives, only the first part is needed" = "For split archives, only the first part is needed";
+"Drop archives here. Supported formats: ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR" = "Drop archives here. Supported formats: ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR";
+"Select Files" = "Select Files";
+"Opens a file picker to choose archive files" = "Opens a file picker to choose archive files";
+"Extract in place" = "Extract in place";
+"Extract files directly into the source directory instead of a subfolder" = "Extract files directly into the source directory instead of a subfolder";
+"Clear" = "Clear";
+"Extract All" = "Extract All";
+"Begin extraction of all selected archives" = "Begin extraction of all selected archives";
+
+// ExtractionCompletedView
+"Extraction Complete" = "Extraction Complete";
+"Extraction Failed" = "Extraction Failed";
+"Extraction Complete with Errors" = "Extraction Complete with Errors";
+"Successful" = "Successful";
+"Failed" = "Failed";
+"Reveal in Finder" = "Reveal in Finder";
+"Move to Trash" = "Move to Trash";
+"Back to File List" = "Back to File List";
+"Try Again" = "Try Again";
+"Extract Another" = "Extract Another";
+"Extraction completed" = "Extraction completed";
+
+// ExtractionFailedView
+"Move to Trash" = "Move to Trash";
+"Try Again" = "Try Again";
+
+// ExtractionProgressView
+"Extracting..." = "Extracting...";
+"Extraction progress" = "Extraction progress";
+"Cancel" = "Cancel";
+
+// FileRowView
+"unknown format" = "unknown format";
+
+// HelpView
+"Usage" = "Usage";
+"Supported Formats" = "Supported Formats";
+"Tips" = "Tips";
+"Done" = "Done";
+"How to extract archives" = "How to extract archives";
+"1" = "1";
+"Drop archives onto the main window, or click Select Files to browse." = "Drop archives onto the main window, or click Select Files to browse.";
+"2" = "2";
+"If the archive is password-protected, enable the toggle and enter the password." = "If the archive is password-protected, enable the toggle and enter the password.";
+"3" = "3";
+"Choose whether to extract in place (files go directly into the source directory)." = "Choose whether to extract in place (files go directly into the source directory).";
+"4" = "4";
+"Click Extract All. Progress is shown during extraction." = "Click Extract All. Progress is shown during extraction.";
+"5" = "5";
+"When complete, click Reveal in Finder to locate the extracted files." = "When complete, click Reveal in Finder to locate the extracted files.";
+"Adding files" = "Adding files";
+"Drag and drop one or more archive files onto the drop zone." = "Drag and drop one or more archive files onto the drop zone.";
+"Click Select Files to use the system file picker." = "Click Select Files to use the system file picker.";
+"Supported formats are detected automatically by extension and magic bytes." = "Supported formats are detected automatically by extension and magic bytes.";
+"Extraction behavior" = "Extraction behavior";
+"By default, each archive extracts into a subfolder named after the archive (e.g., project.zip -> project/)." = "By default, each archive extracts into a subfolder named after the archive (e.g., project.zip -> project/).";
+"Enable Extract in place to extract directly into the source directory." = "Enable Extract in place to extract directly into the source directory.";
+"In Settings, you can choose a custom default output directory." = "In Settings, you can choose a custom default output directory.";
+"Enable Move archive to Trash to clean up the original after extraction." = "Enable Move archive to Trash to clean up the original after extraction.";
+"Keyboard shortcuts" = "Keyboard shortcuts";
+"Cmd+O" = "Cmd+O";
+"Open file picker" = "Open file picker";
+"Cmd+E" = "Cmd+E";
+"Extract all selected archives" = "Extract all selected archives";
+"Cmd+Shift+O" = "Cmd+Shift+O";
+"Open Settings (output directory)" = "Open Settings (output directory)";
+"Cmd+?" = "Cmd+?";
+"Open this help window" = "Open this help window";
+"Troubleshooting" = "Troubleshooting";
+"If extraction fails, check that the archive is not corrupted." = "If extraction fails, check that the archive is not corrupted.";
+"Password-protected ZIP archives require the correct password and use /usr/bin/unzip." = "Password-protected ZIP archives require the correct password and use /usr/bin/unzip.";
+"7Z and RAR archives use /usr/bin/unar for extraction." = "7Z and RAR archives use /usr/bin/unar for extraction.";
+"For very large archives, extraction may take a few moments." = "For very large archives, extraction may take a few moments.";
+"If a format is not detected, try renaming the file to include a standard extension." = "If a format is not detected, try renaming the file to include a standard extension.";
+"For split archives (e.g., .part01.rar, .7z.001), only the first part is needed — additional parts are automatically detected." = "For split archives (e.g., .part01.rar, .7z.001), only the first part is needed — additional parts are automatically detected.";
+"About Decompress" = "About Decompress";
+
+// PasswordPromptView
+"Enter password" = "Enter password";
+"Archive password" = "Archive password";
+"Enter the password for the encrypted archive" = "Enter the password for the encrypted archive";
+
+// SettingsView
+"General" = "General";
+"Formats" = "Formats";
+"Extract to source directory by default" = "Extract to source directory by default";
+"When enabled, archives are extracted into the same folder as the archive source" = "When enabled, archives are extracted into the same folder as the archive source";
+"Move archive to Trash after extraction" = "Move archive to Trash after extraction";
+"Archives will be moved to Trash after successful extraction" = "Archives will be moved to Trash after successful extraction";
+"Default output location" = "Default output location";
+"Same as source" = "Same as source";
+"Not set" = "Not set";
+"Choose..." = "Choose...";
+"Select default extraction directory" = "Select default extraction directory";
+"Turn off \"Extract to source directory\" to choose a custom location." = "Turn off \"Extract to source directory\" to choose a custom location.";
+
+// Format strings (interpolated)
+"Selected %d files" = "Selected %d files";
+"%d of %d files extracted successfully" = "%d of %d files extracted successfully";
+"Current file: %@" = "Current file: %@";
+"Archive %d of %d" = "Archive %d of %d";
+"Extraction failed: %@" = "Extraction failed: %@";
+"Remove %@" = "Remove %@";
+"%@, %@" = "%@, %@";
+
+// ServiceError
+"Unsupported archive format: %@" = "Unsupported archive format: %@";
+"File not found: %@" = "File not found: %@";
+"Extraction failed: %@" = "Extraction failed: %@";
+"Could not create destination: %@" = "Could not create destination: %@";
+"Process error: %@" = "Process error: %@";
+"Password is required for this archive" = "Password is required for this archive";
+"Required tool not found: %1$@. Install with: brew install %1$@" = "Required tool not found: %1$@. Install with: brew install %1$@";
+
+// DecompressionService (progress)
+"Preparing..." = "Preparing...";
+"Extracting ZIP..." = "Extracting ZIP...";
+"Extracting encrypted ZIP..." = "Extracting encrypted ZIP...";
+"Extracting TAR..." = "Extracting TAR...";
+"Extracting..." = "Extracting...";
+"Done" = "Done";
+"Exit code %d" = "Exit code %d";
+
+// ViewModel
+"Could not detect format for %@" = "Could not detect format for %@";
+
+// HelpView - magic description
+"no magic bytes" = "no magic bytes";
+"magic: %@" = "magic: %@";
+
+// DecompressApp
+"Open..." = "Open...";
+"Extract All" = "Extract All";
+"Decompress Help" = "Decompress Help";
+
+// SettingsView - about text
+"Decompress is a native macOS archive extraction utility. It uses system tools (ditto, tar, gunzip, bunzip2, unxz, unar, unzip) to handle a wide range of archive formats without any external dependencies." = "Decompress is a native macOS archive extraction utility. It uses system tools (ditto, tar, gunzip, bunzip2, unxz, unar, unzip) to handle a wide range of archive formats without any external dependencies.";

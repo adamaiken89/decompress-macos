@@ -1,0 +1,30 @@
+#!/bin/bash
+# Pre-commit hook for decompress-macos
+# Runs swift-format and build before allowing a commit.
+# Skip with: git commit --no-verify
+
+echo "🔍 Running pre-commit checks..."
+
+echo ""
+echo "--- swift-format (auto-fix) ---"
+xcrun swift-format format --in-place --recursive Sources/ Tests/ 2>/dev/null || true
+git add -u Sources/ Tests/ 2>/dev/null || true
+
+echo "--- swift-format (lint check) ---"
+if ! xcrun swift-format lint --recursive Sources/ Tests/ 2>/dev/null; then
+    echo "❌ swift-format found violations."
+    echo "   Run 'make format' to fix them."
+    exit 1
+fi
+echo "   ✅ Formatting passed"
+
+echo ""
+echo "--- Swift Build (strict concurrency) ---"
+if ! swift build -Xswiftc -strict-concurrency=complete 2>/dev/null; then
+    echo "❌ Build failed. Fix compilation errors before committing."
+    exit 1
+fi
+echo "   ✅ Build passed"
+
+echo ""
+echo "✅ All pre-commit checks passed!"

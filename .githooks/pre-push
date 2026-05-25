@@ -1,0 +1,17 @@
+#!/bin/bash
+# Pre-push hook for decompress-macos
+# Runs the full test suite before allowing a push.
+# Skip with: git push --no-verify
+
+echo "Pre-push: running test suite..."
+
+echo ""
+echo "--- Swift Test ---"
+if ! swift test --verbose 2>/dev/null; then
+    echo "Tests failed. Fix them before pushing."
+    exit 1
+fi
+echo "   Tests passed"
+
+echo ""
+echo "All pre-push checks passed!"
