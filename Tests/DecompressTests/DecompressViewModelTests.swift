@@ -199,4 +199,97 @@ final class DecompressViewModelTests: XCTestCase {
     func testExtractInPlaceDefaultIsFalse() {
         XCTAssertFalse(viewModel.extractInPlace)
     }
+
+    // MARK: - Split archive part filtering
+
+    func testAddFilesFiltersSplitRarParts() {
+        viewModel.addFiles([
+            URL(fileURLWithPath: "/tmp/archive.part01.rar"),
+            URL(fileURLWithPath: "/tmp/archive.part02.rar"),
+        ])
+        XCTAssertEqual(viewModel.selectedURLs.count, 1)
+        XCTAssertEqual(viewModel.selectedURLs[0].lastPathComponent, "archive.part01.rar")
+    }
+
+    func testAddFilesKeepsOrphanSplitPart() {
+        viewModel.addFiles([URL(fileURLWithPath: "/tmp/archive.part02.rar")])
+        XCTAssertEqual(viewModel.selectedURLs.count, 1)
+    }
+
+    func testAddFilesFiltersMultipleSplitParts() {
+        viewModel.addFiles([
+            URL(fileURLWithPath: "/tmp/archive.part01.rar"),
+            URL(fileURLWithPath: "/tmp/archive.part02.rar"),
+            URL(fileURLWithPath: "/tmp/archive.part03.rar"),
+        ])
+        XCTAssertEqual(viewModel.selectedURLs.count, 1)
+        XCTAssertEqual(viewModel.selectedURLs[0].lastPathComponent, "archive.part01.rar")
+    }
+
+    func testAddFilesFiltersSplitPartOnSecondCall() {
+        viewModel.addFiles([URL(fileURLWithPath: "/tmp/archive.part01.rar")])
+        viewModel.addFiles([URL(fileURLWithPath: "/tmp/archive.part02.rar")])
+        XCTAssertEqual(viewModel.selectedURLs.count, 1)
+        XCTAssertEqual(viewModel.selectedURLs[0].lastPathComponent, "archive.part01.rar")
+    }
+
+    func testAddFilesFiltersSplitPartsPerGroup() {
+        viewModel.addFiles([
+            URL(fileURLWithPath: "/tmp/a.part01.rar"),
+            URL(fileURLWithPath: "/tmp/a.part02.rar"),
+            URL(fileURLWithPath: "/tmp/b.part01.rar"),
+            URL(fileURLWithPath: "/tmp/b.part02.rar"),
+        ])
+        XCTAssertEqual(viewModel.selectedURLs.count, 2)
+        XCTAssertEqual(Set(viewModel.selectedURLs.map(\.lastPathComponent)), ["a.part01.rar", "b.part01.rar"])
+    }
+
+    func testAddFilesFiltersSplitSevenZipParts() {
+        viewModel.addFiles([
+            URL(fileURLWithPath: "/tmp/archive.7z.001"),
+            URL(fileURLWithPath: "/tmp/archive.7z.002"),
+        ])
+        XCTAssertEqual(viewModel.selectedURLs.count, 1)
+        XCTAssertEqual(viewModel.selectedURLs[0].lastPathComponent, "archive.7z.001")
+    }
+
+    func testAddFilesFiltersSplitZipParts() {
+        viewModel.addFiles([
+            URL(fileURLWithPath: "/tmp/archive.zip.001"),
+            URL(fileURLWithPath: "/tmp/archive.zip.002"),
+        ])
+        XCTAssertEqual(viewModel.selectedURLs.count, 1)
+        XCTAssertEqual(viewModel.selectedURLs[0].lastPathComponent, "archive.zip.001")
+    }
+
+    func testAddFilesFiltersGenericSplitParts() {
+        viewModel.addFiles([
+            URL(fileURLWithPath: "/tmp/archive.001"),
+            URL(fileURLWithPath: "/tmp/archive.002"),
+        ])
+        XCTAssertEqual(viewModel.selectedURLs.count, 1)
+        XCTAssertEqual(viewModel.selectedURLs[0].lastPathComponent, "archive.001")
+    }
+
+    func testAddFilesAcceptsSingle001File() {
+        viewModel.addFiles([URL(fileURLWithPath: "/tmp/archive.001")])
+        XCTAssertEqual(viewModel.selectedURLs.count, 1)
+    }
+
+    func testAddFilesDoesNotAffectNonSplitFiles() {
+        viewModel.addFiles([
+            URL(fileURLWithPath: "/tmp/a.zip"),
+            URL(fileURLWithPath: "/tmp/b.rar"),
+        ])
+        XCTAssertEqual(viewModel.selectedURLs.count, 2)
+    }
+
+    func testAddFilesSplitPartWithSingleDigitPartNumber() {
+        viewModel.addFiles([
+            URL(fileURLWithPath: "/tmp/archive.part1.rar"),
+            URL(fileURLWithPath: "/tmp/archive.part2.rar"),
+        ])
+        XCTAssertEqual(viewModel.selectedURLs.count, 1)
+        XCTAssertEqual(viewModel.selectedURLs[0].lastPathComponent, "archive.part1.rar")
+    }
 }

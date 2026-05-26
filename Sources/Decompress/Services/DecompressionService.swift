@@ -1,6 +1,8 @@
 import Foundation
+import OSLog
 
 actor DecompressionService {
+    private static let logger = Logger(subsystem: "com.decompress", category: "service")
     enum ServiceError: Error, LocalizedError, Sendable {
         case unsupportedFormat(String)
         case fileNotFound(URL)
@@ -8,6 +10,7 @@ actor DecompressionService {
         case destinationCreationFailed(URL)
         case processError(String)
         case passwordRequired
+        case toolNotFound(String)
 
         var errorDescription: String? {
             switch self {
@@ -28,12 +31,29 @@ actor DecompressionService {
 
             case .passwordRequired:
                 "Password is required for this archive"
+
+            case .toolNotFound(let name):
+                "Required tool not found: \(name). Install with: brew install \(name)"
             }
         }
     }
 
     static let shared = DecompressionService()
     private init() {}
+
+    static func findTool(_ name: String) -> URL? {
+        let candidates = [
+            "/opt/homebrew/bin/\(name)",
+            "/usr/local/bin/\(name)",
+            "/usr/bin/\(name)"
+        ]
+        for path in candidates {
+            if FileManager.default.fileExists(atPath: path) {
+                return URL(fileURLWithPath: path)
+            }
+        }
+        return nil
+    }
 
     func extract(
         sourceURL: URL,
@@ -42,7 +62,10 @@ actor DecompressionService {
         password: String? = nil,
         progressHandler: @Sendable @escaping (Double, String) -> Void
     ) async throws -> ExtractionResult {
+        Self.logger.debug("Extract start: \(sourceURL.lastPathComponent, privacy: .public) format=\(format.rawValue, privacy: .public) dest=\(destinationURL.path, privacy: .public) hasPassword=\(password != nil, privacy: .public)")
+
         guard FileManager.default.fileExists(atPath: sourceURL.path) else {
+            Self.logger.error("File not found: \(sourceURL.path, privacy: .public)")
             throw ServiceError.fileNotFound(sourceURL)
         }
 
@@ -83,6 +106,7 @@ actor DecompressionService {
         let duration = Date().timeIntervalSince(startTime)
         let fileCount = countFilesRecursively(at: destinationURL)
 
+        Self.logger.debug("Extract success: \(sourceURL.lastPathComponent, privacy: .public) files=\(fileCount) duration=\(duration, format: .fixed(precision: 2))s")
         progressHandler(1.0, "Done")
 
         return ExtractionResult(
@@ -96,17 +120,24 @@ actor DecompressionService {
     }
 
     nonisolated func isZipEncrypted(_ url: URL) -> Bool {
-        guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        guard let handle = try? FileHandle(forReadingFrom: url) else {
+            Self.logger.warning("Cannot read ZIP header for: \(url.lastPathComponent, privacy: .public)")
+            return false
+        }
         defer { try? handle.close() }
         let header = handle.readData(ofLength: 30)
         guard header.count >= 8,
               header[0..<4] == ArchiveFormat.zip.magicBytes[0]
         else { return false }
-        return (header[6] & 0x01) != 0
+        let encrypted = (header[6] & 0x01) != 0
+        Self.logger.debug("ZIP encrypted check: \(url.lastPathComponent, privacy: .public) -> \(encrypted)")
+        return encrypted
     }
 
     nonisolated func detectFormat(from url: URL) -> ArchiveFormat? {
-        detectFormatByExtension(from: url) ?? detectFormatByMagicBytes(from: url)
+        let result = detectFormatByExtension(from: url) ?? detectFormatByMagicBytes(from: url)
+        Self.logger.debug("Detect format: \(url.lastPathComponent, privacy: .public) -> \(result?.rawValue ?? "nil", privacy: .public)")
+        return result
     }
 
     nonisolated private func detectFormatByExtension(from url: URL) -> ArchiveFormat? {
@@ -152,9 +183,12 @@ actor DecompressionService {
         dest: URL,
         progress: @Sendable @escaping (Double, String) -> Void
     ) async throws {
+        guard let toolURL = Self.findTool("ditto") else {
+            throw ServiceError.toolNotFound("ditto")
+        }
         progress(0.2, "Extracting ZIP...")
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        process.executableURL = toolURL
         process.arguments = ["-x", "-k", source.path, dest.path]
         try await runProcess(process, progress: progress)
     }
@@ -165,10 +199,12 @@ actor DecompressionService {
         password: String,
         progress: @Sendable @escaping (Double, String) -> Void
     ) async throws {
+        guard let toolURL = Self.findTool("unzip") else {
+            throw ServiceError.toolNotFound("unzip")
+        }
         progress(0.2, "Extracting encrypted ZIP...")
-        // unzip -P <password> <file> -d <dest>
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+        process.executableURL = toolURL
         process.arguments = ["-P", password, "-o", source.path, "-d", dest.path]
         try await runProcess(process, progress: progress)
     }
@@ -179,9 +215,12 @@ actor DecompressionService {
         format: ArchiveFormat,
         progress: @Sendable @escaping (Double, String) -> Void
     ) async throws {
+        guard let toolURL = Self.findTool("tar") else {
+            throw ServiceError.toolNotFound("tar")
+        }
         progress(0.2, "Extracting TAR...")
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
+        process.executableURL = toolURL
 
         switch format {
         case .tarGz:
@@ -206,21 +245,14 @@ actor DecompressionService {
         tool: String,
         args: [String]
     ) async throws {
+        guard let toolURL = Self.findTool(tool) else {
+            throw ServiceError.toolNotFound(tool)
+        }
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/\(tool)")
+        process.executableURL = toolURL
         process.arguments = args
         try await runProcess(process, progress: { _, _ in })
     }
-
-    private static let unarURL: URL? = {
-        let paths = ["/opt/homebrew/bin/unar", "/usr/local/bin/unar", "/usr/bin/unar"]
-        for path in paths {
-            if FileManager.default.fileExists(atPath: path) {
-                return URL(fileURLWithPath: path)
-            }
-        }
-        return nil
-    }()
 
     private func extractWithUnar(
         source: URL,
@@ -228,10 +260,12 @@ actor DecompressionService {
         password: String? = nil,
         progress: @Sendable @escaping (Double, String) -> Void
     ) async throws {
-        guard let unarURL = Self.unarURL else {
-            throw ServiceError.processError("unar is not installed. Install it with: brew install unar")
+        guard let unarURL = Self.findTool("unar") else {
+            Self.logger.error("unar tool not found at expected paths")
+            throw ServiceError.toolNotFound("unar")
         }
         progress(0.2, "Extracting...")
+        Self.logger.debug("Extracting with unar: \(source.lastPathComponent, privacy: .public)")
 
         let process = Process()
         process.executableURL = unarURL
@@ -239,6 +273,7 @@ actor DecompressionService {
         var args = ["-o", dest.path, "-q"]
         if let password, !password.isEmpty {
             args.append(contentsOf: ["-p", password])
+            Self.logger.debug("unar using password (length=\(password.count))")
         }
         args.append(source.path)
         process.arguments = args
@@ -255,16 +290,35 @@ actor DecompressionService {
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
 
+        let cmd = (process.executableURL?.lastPathComponent ?? "?")
+            + " " + (process.arguments?.joined(separator: " ") ?? "")
+        Self.logger.debug("Running: \(cmd, privacy: .public)")
+
         return try await withCheckedThrowingContinuation { continuation in
             process.terminationHandler = { proc in
+                let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+                let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+
                 if proc.terminationStatus == 0 {
+                    let stdout = String(data: stdoutData, encoding: .utf8) ?? ""
+                    if !stdout.isEmpty {
+                        Self.logger.debug("stdout: \(stdout, privacy: .public)")
+                    }
                     continuation.resume()
                 } else {
-                    let errorData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
-                    let errorMsg = String(data: errorData, encoding: .utf8) ?? "Unknown error"
+                    let stderr = String(data: stderrData, encoding: .utf8) ?? ""
+                    let stdout = String(data: stdoutData, encoding: .utf8) ?? ""
+                    Self.logger.error("Process failed (exit=\(proc.terminationStatus)): \(cmd, privacy: .public)")
+                    if !stderr.isEmpty {
+                        Self.logger.error("stderr: \(stderr, privacy: .public)")
+                    }
+                    if !stdout.isEmpty {
+                        Self.logger.error("stdout: \(stdout, privacy: .public)")
+                    }
+                    let errorMsg = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
                     continuation.resume(
                         throwing: ServiceError.processError(
-                            errorMsg.trimmingCharacters(in: .whitespacesAndNewlines)
+                            errorMsg.isEmpty ? "Exit code \(proc.terminationStatus)" : errorMsg
                         )
                     )
                 }
@@ -273,6 +327,7 @@ actor DecompressionService {
             do {
                 try process.run()
             } catch {
+                Self.logger.error("Failed to launch process: \(cmd, privacy: .public) error=\(error.localizedDescription, privacy: .public)")
                 continuation.resume(throwing: ServiceError.processError(error.localizedDescription))
             }
         }

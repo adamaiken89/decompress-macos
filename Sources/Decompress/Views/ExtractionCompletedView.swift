@@ -22,7 +22,10 @@ struct ExtractionCompletedView: View {
                 resultRow("Format", result.format.displayName, "doc.zipper")
                 resultRow("Files extracted", "\(result.fileCount)", "doc.on.doc")
                 resultRow("Total size", result.formattedSize, "externaldrive")
-                resultRow("Duration", result.formattedDuration, "clock")
+                if let duration = result.formattedDuration {
+                    resultRow("Duration", duration, "clock")
+                }
+                resultRow("Location", result.destinationURL.path, "folder")
             }
             .font(.subheadline)
 
@@ -35,6 +38,17 @@ struct ExtractionCompletedView: View {
                     )
                 }
                 .keyboardShortcut("r")
+
+                Button("Open Folder") {
+                    NSWorkspace.shared.open(result.destinationURL)
+                }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+
+                Button("Copy Path") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(result.destinationURL.path, forType: .string)
+                }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
 
                 Button("Extract Another") {
                     viewModel.reset()

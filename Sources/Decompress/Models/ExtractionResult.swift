@@ -8,7 +8,8 @@ struct ExtractionResult: Sendable {
     let duration: TimeInterval
     let bytesExtracted: Int64
 
-    var formattedDuration: String {
+    var formattedDuration: String? {
+        guard duration >= 1.0 else { return nil }
         let formatter = DateComponentsFormatter()
         formatter.allowedUnits = [.hour, .minute, .second]
         formatter.unitsStyle = .abbreviated
@@ -25,7 +26,7 @@ struct ExtractionResult: Sendable {
 enum ExtractionState: Sendable {
     case idle
     case preparing
-    case extracting(progress: Double, currentFile: String)
+    case extracting(progress: Double, currentFile: String, archiveIndex: Int, totalArchives: Int)
     case completed(ExtractionResult)
     case failed(String)
 }

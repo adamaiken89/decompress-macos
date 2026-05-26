@@ -9,20 +9,19 @@ struct DragDropView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Spacer()
-
-            dropIcon
-            instructions
-            selectButton
-            passwordPrompt
-
-            if !viewModel.selectedURLs.isEmpty {
+            if viewModel.selectedURLs.isEmpty {
+                Spacer()
+                dropIcon
+                instructions
+                selectButton
+                passwordPrompt
+                Spacer()
+            } else {
                 selectedFilesSection
+                    .frame(maxHeight: .infinity)
                 extractionOptions
                 actionButtons
             }
-
-            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(dropZoneBackground)
@@ -57,6 +56,10 @@ struct DragDropView: View {
 
             Text("Drag files onto this window  ·  Select Files to browse")
                 .font(.caption2)
+                .foregroundStyle(.tertiary)
+
+            Text("For split archives, only the first part is needed")
+                .font(.caption)
                 .foregroundStyle(.tertiary)
         }
         .accessibilityLabel("Drop archives here. Supported formats: ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR")
@@ -94,7 +97,6 @@ struct DragDropView: View {
                     }
                 }
             }
-            .frame(maxHeight: 200)
         }
         .padding(12)
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))

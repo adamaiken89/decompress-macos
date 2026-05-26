@@ -15,7 +15,7 @@ struct ExtractionProgressView: View {
                 .font(.title3)
                 .fontWeight(.medium)
 
-            if case .extracting(let progress, let currentFile) = viewModel.extractionState {
+            if case .extracting(let progress, let currentFile, let archiveIndex, let totalArchives) = viewModel.extractionState {
                 ProgressView(value: progress, total: 1.0)
                     .frame(maxWidth: 300)
                     .accessibilityLabel("Extraction progress")
@@ -31,6 +31,12 @@ struct ExtractionProgressView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
+
+                if totalArchives > 1 {
+                    Text("Archive \(archiveIndex + 1) of \(totalArchives)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
             }
 
             if viewModel.canCancel {

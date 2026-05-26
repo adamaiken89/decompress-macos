@@ -93,6 +93,7 @@ struct HelpView: View {
                     bullet("7Z and RAR archives use /usr/bin/unar for extraction.")
                     bullet("For very large archives, extraction may take a few moments.")
                     bullet("If a format is not detected, try renaming the file to include a standard extension.")
+                    bullet("For split archives (e.g., .part01.rar, .7z.001), only the first part is needed — additional parts are automatically detected.")
                 }
 
                 section("About Decompress") {

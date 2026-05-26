@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 
 @Observable
 @MainActor
@@ -14,6 +15,7 @@ final class DecompressViewModel {
     var isPasswordProtected = false
     var password = ""
     var extractInPlace = false
+    var lastFailedSourceURL: URL?
 
     private let service = DecompressionService.shared
     private var extractionTask: Task<Void, Never>?
@@ -54,7 +56,39 @@ final class DecompressViewModel {
             }
             return format != nil
         }
-        selectedURLs.append(contentsOf: archiveURLs)
+
+        let filtered = archiveURLs.filter { url in
+            guard let info = splitPartInfo(for: url), info.partNumber > 1 else { return true }
+            let allCandidateURLs = selectedURLs + archiveURLs
+            return !allCandidateURLs.contains { candidate in
+                guard candidate != url, let ci = splitPartInfo(for: candidate) else { return false }
+                return ci.groupKey == info.groupKey && ci.partNumber == 1
+            }
+        }
+
+        selectedURLs.append(contentsOf: filtered)
+    }
+
+    private func splitPartInfo(for url: URL) -> (groupKey: String, partNumber: Int)? {
+        let name = url.lastPathComponent
+
+        if let match = try? /^(.+)\.part(\d+)\./.firstMatch(in: name) {
+            return (String(match.1), Int(match.2) ?? 0)
+        }
+
+        if let match = try? /^(.+)\.(7z|zip)\.(\d{3})$/.firstMatch(in: name) {
+            return (String(match.1), Int(match.3) ?? 0)
+        }
+
+        if let match = try? /^(.+)\.r(\d{2})$/.firstMatch(in: name) {
+            return (String(match.1), Int(match.2) ?? 0)
+        }
+
+        if let match = try? /^(.+)\.(\d{3})$/.firstMatch(in: name) {
+            return (String(match.1), Int(match.2) ?? 0)
+        }
+
+        return nil
     }
 
     func detectFormat(for url: URL) -> ArchiveFormat? {
@@ -79,13 +113,16 @@ final class DecompressViewModel {
         let usePassword = isPasswordProtected && !password.isEmpty ? password : nil
         let shouldTrash = deleteArchiveAfterExtraction
 
+        let totalArchives = urls.count
+
         extractionTask = Task {
             extractionState = .preparing
 
-            for url in urls {
+            for (index, url) in urls.enumerated() {
                 if Task.isCancelled { break }
 
                 guard let format = service.detectFormat(from: url) else {
+                    lastFailedSourceURL = url
                     extractionState = .failed("Could not detect format for \(url.lastPathComponent)")
                     extractionTask = nil
                     return
@@ -111,7 +148,10 @@ final class DecompressViewModel {
                         password: usePassword,
                         progressHandler: { [weak self] progress, file in
                             Task { @MainActor in
-                                self?.extractionState = .extracting(progress: progress, currentFile: file)
+                                self?.extractionState = .extracting(
+                                    progress: progress, currentFile: file,
+                                    archiveIndex: index, totalArchives: totalArchives
+                                )
                             }
                         }
                     )
@@ -122,6 +162,8 @@ final class DecompressViewModel {
 
                     extractionState = .completed(result)
                 } catch {
+                    Logger(subsystem: "com.decompress", category: "viewmodel").error("Extraction failed: \(url.lastPathComponent, privacy: .public) error=\(error.localizedDescription, privacy: .public)")
+                    lastFailedSourceURL = url
                     extractionState = .failed("\(url.lastPathComponent): \(error.localizedDescription)")
                     extractionTask = nil
                     return
@@ -154,5 +196,6 @@ final class DecompressViewModel {
         extractionState = .idle
         password = ""
         isPasswordProtected = false
+        lastFailedSourceURL = nil
     }
 }

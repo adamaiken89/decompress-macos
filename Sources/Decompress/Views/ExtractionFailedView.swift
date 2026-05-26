@@ -25,11 +25,22 @@ struct ExtractionFailedView: View {
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button("Try Again") {
-                viewModel.reset()
+            HStack(spacing: 12) {
+                Button("Try Again") {
+                    viewModel.reset()
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.return)
+
+                if let sourceURL = viewModel.lastFailedSourceURL {
+                    Button("Move to Trash") {
+                        try? FileManager.default.trashItem(at: sourceURL, resultingItemURL: nil)
+                        viewModel.reset()
+                    }
+                    .buttonStyle(.bordered)
+                    .keyboardShortcut(.delete, modifiers: .command)
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .keyboardShortcut(.return)
 
             Spacer()
         }
