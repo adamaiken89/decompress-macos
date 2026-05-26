@@ -29,6 +29,7 @@ final class DecompressViewModel {
         switch extractionState {
         case .preparing, .extracting:
             true
+
         case .idle, .completed, .failed:
             false
         }
@@ -38,6 +39,7 @@ final class DecompressViewModel {
         switch extractionState {
         case .preparing, .extracting:
             true
+
         case .idle, .completed, .failed:
             false
         }
@@ -119,11 +121,21 @@ final class DecompressViewModel {
 
         extractionTask = Task {
             extractionState = .preparing
+            let destinationFor: (URL) -> URL = { url in
+                if useExtractInPlace {
+                    return url.deletingLastPathComponent()
+                }
+                if let customOutput = useOutputDir, !useAutoDir {
+                    return FileManager.default.uniqueDirectoryURL(
+                        in: customOutput,
+                        preferredName: url.deletingPathExtension().lastPathComponent
+                    )
+                }
+                return FileManager.default.suggestedDestinationURL(for: url)
+            }
             await performExtractions(
                 urls: urls,
-                useExtractInPlace: useExtractInPlace,
-                useAutoDir: useAutoDir,
-                useOutputDir: useOutputDir,
+                destinationFor: destinationFor,
                 usePassword: usePassword,
                 shouldTrash: shouldTrash
             )
@@ -131,29 +143,9 @@ final class DecompressViewModel {
         }
     }
 
-    private func destinationURL(
-        for url: URL,
-        extractInPlace: Bool,
-        autoDir: Bool,
-        outputDir: URL?
-    ) -> URL {
-        if extractInPlace {
-            return url.deletingLastPathComponent()
-        }
-        if let customOutput = outputDir, !autoDir {
-            return FileManager.default.uniqueDirectoryURL(
-                in: customOutput,
-                preferredName: url.deletingPathExtension().lastPathComponent
-            )
-        }
-        return FileManager.default.suggestedDestinationURL(for: url)
-    }
-
     private func performExtractions(
         urls: [URL],
-        useExtractInPlace: Bool,
-        useAutoDir: Bool,
-        useOutputDir: URL?,
+        destinationFor: (URL) -> URL,
         usePassword: String?,
         shouldTrash: Bool
     ) async {
@@ -168,12 +160,7 @@ final class DecompressViewModel {
                 return
             }
 
-            let destination = destinationURL(
-                for: url,
-                extractInPlace: useExtractInPlace,
-                autoDir: useAutoDir,
-                outputDir: useOutputDir
-            )
+            let destination = destinationFor(url)
 
             do {
                 let result = try await service.extract(
