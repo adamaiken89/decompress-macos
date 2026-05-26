@@ -119,8 +119,8 @@ final class DecompressViewModel {
         let usePassword = isPasswordProtected && !password.isEmpty ? password : nil
         let shouldTrash = deleteArchiveAfterExtraction
 
+        extractionState = .preparing
         extractionTask = Task {
-            extractionState = .preparing
             let destinationFor: (URL) -> URL = { url in
                 if useExtractInPlace {
                     return url.deletingLastPathComponent()
