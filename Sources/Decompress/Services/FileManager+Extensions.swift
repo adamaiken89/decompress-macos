@@ -35,4 +35,16 @@ extension FileManager {
         let parent = sourceURL.deletingLastPathComponent()
         return uniqueDirectoryURL(in: parent, preferredName: sourceName)
     }
+
+    func countFilesRecursively(at url: URL) -> Int {
+        guard let enumerator = enumerator(
+            at: url,
+            includingPropertiesForKeys: nil
+        ) else { return 0 }
+        var count = 0
+        while enumerator.nextObject() != nil {
+            count += 1
+        }
+        return count
+    }
 }

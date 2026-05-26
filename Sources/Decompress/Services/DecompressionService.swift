@@ -1,46 +1,23 @@
 import Foundation
 import OSLog
 
-enum ServiceError: Error, LocalizedError, Sendable {
-    case unsupportedFormat(String)
-    case fileNotFound(URL)
-    case extractionFailed(String)
-    case destinationCreationFailed(URL)
-    case processError(String)
-    case passwordRequired
-    case toolNotFound(String)
-
-    var errorDescription: String? {
-        switch self {
-        case .unsupportedFormat(let ext):
-            "Unsupported archive format: \(ext)"
-
-        case .fileNotFound(let url):
-            "File not found: \(url.lastPathComponent)"
-
-        case .extractionFailed(let reason):
-            "Extraction failed: \(reason)"
-
-        case .destinationCreationFailed(let url):
-            "Could not create destination: \(url.path)"
-
-        case .processError(let msg):
-            "Process error: \(msg)"
-
-        case .passwordRequired:
-            "Password is required for this archive"
-
-        case .toolNotFound(let name):
-            "Required tool not found: \(name). Install with: brew install \(name)"
-        }
-    }
-}
-
 actor DecompressionService {
     private static let logger = Logger(subsystem: "com.decompress", category: "service")
 
     static let shared = DecompressionService()
     private init() {}
+
+    nonisolated func detectFormat(from url: URL) -> ArchiveFormat? {
+        let result = ArchiveFormatDetector.detectFormat(from: url)
+        Self.logger.debug("Detect format: \(url.lastPathComponent, privacy: .public) -> \(result?.rawValue ?? "nil", privacy: .public)")
+        return result
+    }
+
+    nonisolated func isZipEncrypted(_ url: URL) -> Bool {
+        let result = ArchiveFormatDetector.isZipEncrypted(url)
+        Self.logger.debug("ZIP encrypted check: \(url.lastPathComponent, privacy: .public) -> \(result)")
+        return result
+    }
 
     static func findTool(_ name: String) -> URL? {
         let candidates = [
@@ -68,7 +45,7 @@ actor DecompressionService {
             throw ServiceError.fileNotFound(sourceURL)
         }
 
-        try createDestinationDirectory(at: destinationURL)
+        try FileManager.default.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
         progressHandler(0.1, "Preparing...")
 
         let startTime = Date()
@@ -103,7 +80,7 @@ actor DecompressionService {
         }
 
         let duration = Date().timeIntervalSince(startTime)
-        let fileCount = countFilesRecursively(at: destinationURL)
+        let fileCount = FileManager.default.countFilesRecursively(at: destinationURL)
 
         Self.logger.debug("Extract success: \(sourceURL.lastPathComponent, privacy: .public) files=\(fileCount) duration=\(duration, format: .fixed(precision: 2))s")
         progressHandler(1.0, "Done")
@@ -115,65 +92,6 @@ actor DecompressionService {
             fileCount: fileCount,
             duration: duration,
             bytesExtracted: sourceSize
-        )
-    }
-
-    nonisolated func isZipEncrypted(_ url: URL) -> Bool {
-        guard let handle = try? FileHandle(forReadingFrom: url) else {
-            Self.logger.warning("Cannot read ZIP header for: \(url.lastPathComponent, privacy: .public)")
-            return false
-        }
-        defer { try? handle.close() }
-        let header = handle.readData(ofLength: 30)
-        guard header.count >= 8,
-              header[0..<4] == ArchiveFormat.zip.magicBytes[0]
-        else { return false }
-        let encrypted = (header[6] & 0x01) != 0
-        Self.logger.debug("ZIP encrypted check: \(url.lastPathComponent, privacy: .public) -> \(encrypted)")
-        return encrypted
-    }
-
-    nonisolated func detectFormat(from url: URL) -> ArchiveFormat? {
-        let result = detectFormatByExtension(from: url) ?? detectFormatByMagicBytes(from: url)
-        Self.logger.debug("Detect format: \(url.lastPathComponent, privacy: .public) -> \(result?.rawValue ?? "nil", privacy: .public)")
-        return result
-    }
-
-    nonisolated private func detectFormatByExtension(from url: URL) -> ArchiveFormat? {
-        let path = url.path.lowercased()
-        let sortedFormats = ArchiveFormat.allCases.sorted { lhs, rhs in
-            let lhsLen = lhs.fileExtensions.map(\.count).max() ?? 0
-            let rhsLen = rhs.fileExtensions.map(\.count).max() ?? 0
-            return lhsLen > rhsLen
-        }
-        for format in sortedFormats {
-            for ext in format.fileExtensions where path.hasSuffix(".\(ext)") {
-                return format
-            }
-        }
-        return nil
-    }
-
-    nonisolated private func detectFormatByMagicBytes(from url: URL) -> ArchiveFormat? {
-        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
-        defer { try? handle.close() }
-
-        let headerData = handle.readData(ofLength: 16)
-        guard headerData.count >= 4 else { return nil }
-
-        for format in ArchiveFormat.allCases where !format.magicBytes.isEmpty {
-            for magic in format.magicBytes where headerData.starts(with: magic) {
-                return format
-            }
-        }
-        return nil
-    }
-
-    private func createDestinationDirectory(at url: URL) throws {
-        try FileManager.default.createDirectory(
-            at: url,
-            withIntermediateDirectories: true,
-            attributes: nil
         )
     }
 
@@ -330,17 +248,5 @@ actor DecompressionService {
                 continuation.resume(throwing: ServiceError.processError(error.localizedDescription))
             }
         }
-    }
-
-    private func countFilesRecursively(at url: URL) -> Int {
-        guard let enumerator = FileManager.default.enumerator(
-            at: url,
-            includingPropertiesForKeys: nil
-        ) else { return 0 }
-        var count = 0
-        while enumerator.nextObject() != nil {
-            count += 1
-        }
-        return count
     }
 }
