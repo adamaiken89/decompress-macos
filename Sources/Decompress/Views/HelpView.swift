@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct HelpView: View {
-    @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.dismissWindow)
+    private var dismissWindow
 
     var body: some View {
         TabView {
@@ -159,7 +160,7 @@ struct HelpView: View {
     }
 }
 
-private extension Data {
+extension Data {
     var hexString: String {
         map { String(format: "%02X", $0) }.joined()
     }

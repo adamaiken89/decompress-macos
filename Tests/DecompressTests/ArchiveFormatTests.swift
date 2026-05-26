@@ -113,8 +113,7 @@ final class ArchiveFormatTests: XCTestCase {
 
     func testCompoundExtensionsContainDot() {
         for format in ArchiveFormat.allCases {
-            for ext in format.fileExtensions {
-                if ext.contains(".") {
+            for ext in format.fileExtensions where ext.contains(".") {
                     let parts = ext.split(separator: ".")
                     XCTAssertGreaterThan(parts.count, 1, "Compound extension should have multiple parts: \(ext)")
                 }

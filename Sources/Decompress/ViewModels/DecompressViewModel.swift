@@ -27,15 +27,19 @@ final class DecompressViewModel {
 
     var isBusy: Bool {
         switch extractionState {
-        case .preparing, .extracting: true
-        case .idle, .completed, .failed: false
+        case .preparing, .extracting:
+            true
+        case .idle, .completed, .failed:
+            false
         }
     }
 
     var canCancel: Bool {
         switch extractionState {
-        case .preparing, .extracting: true
-        case .idle, .completed, .failed: false
+        case .preparing, .extracting:
+            true
+        case .idle, .completed, .failed:
+            false
         }
     }
 
@@ -61,8 +65,8 @@ final class DecompressViewModel {
             guard let info = splitPartInfo(for: url), info.partNumber > 1 else { return true }
             let allCandidateURLs = selectedURLs + archiveURLs
             return !allCandidateURLs.contains { candidate in
-                guard candidate != url, let ci = splitPartInfo(for: candidate) else { return false }
-                return ci.groupKey == info.groupKey && ci.partNumber == 1
+                guard candidate != url, let candidateInfo = splitPartInfo(for: candidate) else { return false }
+                return candidateInfo.groupKey == info.groupKey && candidateInfo.partNumber == 1
             }
         }
 
@@ -113,64 +117,95 @@ final class DecompressViewModel {
         let usePassword = isPasswordProtected && !password.isEmpty ? password : nil
         let shouldTrash = deleteArchiveAfterExtraction
 
-        let totalArchives = urls.count
-
         extractionTask = Task {
             extractionState = .preparing
+            await performExtractions(
+                urls: urls,
+                useExtractInPlace: useExtractInPlace,
+                useAutoDir: useAutoDir,
+                useOutputDir: useOutputDir,
+                usePassword: usePassword,
+                shouldTrash: shouldTrash
+            )
+            extractionTask = nil
+        }
+    }
 
-            for (index, url) in urls.enumerated() {
-                if Task.isCancelled { break }
+    private func destinationURL(
+        for url: URL,
+        extractInPlace: Bool,
+        autoDir: Bool,
+        outputDir: URL?
+    ) -> URL {
+        if extractInPlace {
+            return url.deletingLastPathComponent()
+        }
+        if let customOutput = outputDir, !autoDir {
+            return FileManager.default.uniqueDirectoryURL(
+                in: customOutput,
+                preferredName: url.deletingPathExtension().lastPathComponent
+            )
+        }
+        return FileManager.default.suggestedDestinationURL(for: url)
+    }
 
-                guard let format = service.detectFormat(from: url) else {
-                    lastFailedSourceURL = url
-                    extractionState = .failed("Could not detect format for \(url.lastPathComponent)")
-                    extractionTask = nil
-                    return
-                }
+    private func performExtractions(
+        urls: [URL],
+        useExtractInPlace: Bool,
+        useAutoDir: Bool,
+        useOutputDir: URL?,
+        usePassword: String?,
+        shouldTrash: Bool
+    ) async {
+        let totalArchives = urls.count
+        for (index, url) in urls.enumerated() {
+            if Task.isCancelled { break }
 
-                let destination: URL
-                if useExtractInPlace {
-                    destination = url.deletingLastPathComponent()
-                } else if let customOutput = useOutputDir, !useAutoDir {
-                    destination = FileManager.default.uniqueDirectoryURL(
-                        in: customOutput,
-                        preferredName: url.deletingPathExtension().lastPathComponent
-                    )
-                } else {
-                    destination = FileManager.default.suggestedDestinationURL(for: url)
-                }
-
-                do {
-                    let result = try await service.extract(
-                        sourceURL: url,
-                        destinationURL: destination,
-                        format: format,
-                        password: usePassword,
-                        progressHandler: { [weak self] progress, file in
-                            Task { @MainActor in
-                                self?.extractionState = .extracting(
-                                    progress: progress, currentFile: file,
-                                    archiveIndex: index, totalArchives: totalArchives
-                                )
-                            }
-                        }
-                    )
-
-                    if shouldTrash {
-                        try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
-                    }
-
-                    extractionState = .completed(result)
-                } catch {
-                    Logger(subsystem: "com.decompress", category: "viewmodel").error("Extraction failed: \(url.lastPathComponent, privacy: .public) error=\(error.localizedDescription, privacy: .public)")
-                    lastFailedSourceURL = url
-                    extractionState = .failed("\(url.lastPathComponent): \(error.localizedDescription)")
-                    extractionTask = nil
-                    return
-                }
+            guard let format = service.detectFormat(from: url) else {
+                lastFailedSourceURL = url
+                extractionState = .failed("Could not detect format for \(url.lastPathComponent)")
+                extractionTask = nil
+                return
             }
 
-            extractionTask = nil
+            let destination = destinationURL(
+                for: url,
+                extractInPlace: useExtractInPlace,
+                autoDir: useAutoDir,
+                outputDir: useOutputDir
+            )
+
+            do {
+                let result = try await service.extract(
+                    sourceURL: url,
+                    destinationURL: destination,
+                    format: format,
+                    password: usePassword,
+                    progressHandler: { [weak self] progress, file in
+                        Task { @MainActor in
+                            self?.extractionState = .extracting(
+                                progress: progress,
+                                currentFile: file,
+                                archiveIndex: index,
+                                totalArchives: totalArchives
+                            )
+                        }
+                    }
+                )
+
+                if shouldTrash {
+                    try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                }
+
+                extractionState = .completed(result)
+            } catch {
+                Logger(subsystem: "com.decompress", category: "viewmodel")
+                    .error("Extraction failed: \(url.lastPathComponent, privacy: .public) error=\(error.localizedDescription, privacy: .public)")
+                lastFailedSourceURL = url
+                extractionState = .failed("\(url.lastPathComponent): \(error.localizedDescription)")
+                extractionTask = nil
+                return
+            }
         }
     }
 

@@ -1,42 +1,43 @@
 import Foundation
 import OSLog
 
-actor DecompressionService {
-    private static let logger = Logger(subsystem: "com.decompress", category: "service")
-    enum ServiceError: Error, LocalizedError, Sendable {
-        case unsupportedFormat(String)
-        case fileNotFound(URL)
-        case extractionFailed(String)
-        case destinationCreationFailed(URL)
-        case processError(String)
-        case passwordRequired
-        case toolNotFound(String)
+enum ServiceError: Error, LocalizedError, Sendable {
+    case unsupportedFormat(String)
+    case fileNotFound(URL)
+    case extractionFailed(String)
+    case destinationCreationFailed(URL)
+    case processError(String)
+    case passwordRequired
+    case toolNotFound(String)
 
-        var errorDescription: String? {
-            switch self {
-            case .unsupportedFormat(let ext):
-                "Unsupported archive format: \(ext)"
+    var errorDescription: String? {
+        switch self {
+        case .unsupportedFormat(let ext):
+            "Unsupported archive format: \(ext)"
 
-            case .fileNotFound(let url):
-                "File not found: \(url.lastPathComponent)"
+        case .fileNotFound(let url):
+            "File not found: \(url.lastPathComponent)"
 
-            case .extractionFailed(let reason):
-                "Extraction failed: \(reason)"
+        case .extractionFailed(let reason):
+            "Extraction failed: \(reason)"
 
-            case .destinationCreationFailed(let url):
-                "Could not create destination: \(url.path)"
+        case .destinationCreationFailed(let url):
+            "Could not create destination: \(url.path)"
 
-            case .processError(let msg):
-                "Process error: \(msg)"
+        case .processError(let msg):
+            "Process error: \(msg)"
 
-            case .passwordRequired:
-                "Password is required for this archive"
+        case .passwordRequired:
+            "Password is required for this archive"
 
-            case .toolNotFound(let name):
-                "Required tool not found: \(name). Install with: brew install \(name)"
-            }
+        case .toolNotFound(let name):
+            "Required tool not found: \(name). Install with: brew install \(name)"
         }
     }
+}
+
+actor DecompressionService {
+    private static let logger = Logger(subsystem: "com.decompress", category: "service")
 
     static let shared = DecompressionService()
     private init() {}
@@ -45,12 +46,10 @@ actor DecompressionService {
         let candidates = [
             "/opt/homebrew/bin/\(name)",
             "/usr/local/bin/\(name)",
-            "/usr/bin/\(name)"
+            "/usr/bin/\(name)",
         ]
-        for path in candidates {
-            if FileManager.default.fileExists(atPath: path) {
-                return URL(fileURLWithPath: path)
-            }
+        for path in candidates where FileManager.default.fileExists(atPath: path) {
+            return URL(fileURLWithPath: path)
         }
         return nil
     }

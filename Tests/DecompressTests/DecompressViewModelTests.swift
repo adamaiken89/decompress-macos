@@ -4,14 +4,10 @@ import XCTest
 
 @MainActor
 final class DecompressViewModelTests: XCTestCase {
-    var viewModel: DecompressViewModel!
+    var viewModel = DecompressViewModel()
 
     override func setUp() async throws {
         viewModel = DecompressViewModel()
-    }
-
-    override func tearDown() async throws {
-        viewModel = nil
     }
 
     func testInitialState() {

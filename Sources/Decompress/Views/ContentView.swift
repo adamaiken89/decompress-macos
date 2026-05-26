@@ -3,7 +3,8 @@ import SwiftUI
 struct ContentView: View {
     @Environment(DecompressViewModel.self)
     private var viewModel
-    @Environment(\.openWindow) private var openWindow
+    @Environment(\.openWindow)
+    private var openWindow
 
     var body: some View {
         VStack(spacing: 0) {
