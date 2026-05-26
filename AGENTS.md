@@ -10,6 +10,7 @@ make lint-fix   # swiftlint --fix
 make release    # swift build -c release
 make run        # swift run
 make clean      # swift package clean && rm -rf .build
+make session    # start new dev session: make session <branch-name>
 ```
 
 All commands are in `Makefile`. CI pipeline in `.github/workflows/ci.yml`.
@@ -23,8 +24,10 @@ Sources/Decompress/
 ├── App/DecompressApp.swift              # @main entry, window/scene config
 ├── Models/ArchiveFormat.swift           # Format enum + magic bytes
 ├── Models/ExtractionResult.swift        # Result models + ExtractionState
+├── Services/ArchiveFormatDetector.swift # Static format detection + ZIP encryption check
 ├── Services/DecompressionService.swift  # Actor (shared singleton)
 ├── Services/FileManager+Extensions.swift
+├── Services/ServiceError.swift          # Error types for extraction
 ├── ViewModels/DecompressViewModel.swift # @Observable, @MainActor
 └── Views/
     ├── ContentView.swift                # Root: switches views by extractionState

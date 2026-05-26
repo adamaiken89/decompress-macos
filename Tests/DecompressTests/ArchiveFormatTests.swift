@@ -119,7 +119,6 @@ final class ArchiveFormatTests: XCTestCase {
                 }
             }
         }
-    }
 
     func testAllCaseIterableCoverage() {
         let expectedCount = 11
