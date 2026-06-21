@@ -28,6 +28,25 @@ struct LiteContentView: View {
       }
     }
     .padding(.vertical, 16)
+    .onAppear {
+      resizeWindowForLiteMode(center: true)
+    }
+    .onChange(of: viewModel.extractionState) { _, _ in
+      resizeWindowForLiteMode(center: false)
+    }
+  }
+
+  private func resizeWindowForLiteMode(center: Bool) {
+    guard let window = NSApp.windows.first else { return }
+    window.minSize = NSSize(width: 200, height: 100)
+    window.layoutIfNeeded()
+    if let contentView = window.contentView {
+      let size = contentView.fittingSize
+      window.setContentSize(size)
+      if center {
+        window.center()
+      }
+    }
   }
 
   private var litePasswordView: some View {
