@@ -148,8 +148,9 @@ struct ArchiveContentView: View {
   }
 
   private func entryRow(_ entry: ArchiveEntry, archiveURL: URL) -> some View {
-    HStack(spacing: DesignConstants.Spacing.sectionHeader) {
-      Toggle(isOn: toggleBinding(for: entry, archiveURL: archiveURL)) {
+    let binding = toggleBinding(for: entry, archiveURL: archiveURL)
+    return HStack(spacing: DesignConstants.Spacing.sectionHeader) {
+      Toggle(isOn: binding) {
         HStack(spacing: DesignConstants.Spacing.relatedContent) {
           Image(systemName: "doc")
             .foregroundStyle(AppColors.acDocIcon)
@@ -174,6 +175,8 @@ struct ArchiveContentView: View {
     }
     .padding(.vertical, DesignConstants.Padding.verticalCompact)
     .padding(.horizontal, DesignConstants.Padding.horizontalExtraTight)
+    .contentShape(Rectangle())
+    .onTapGesture { binding.wrappedValue.toggle() }
     .rowBackground(cornerRadius: 4)
   }
 

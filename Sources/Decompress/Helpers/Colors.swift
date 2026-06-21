@@ -68,6 +68,6 @@ enum AppColors {
   // MARK: - Backgrounds
   static let bgCard = Color(nsColor: .windowBackgroundColor).opacity(0.85)
   static let bgSection = Color(nsColor: .windowBackgroundColor).opacity(0.8)
-  static let bgRow = Color(nsColor: .controlBackgroundColor).opacity(0.4)
+  static let bgRow = Color(nsColor: .controlBackgroundColor).opacity(0.7)
   static let bgBadge = Color(nsColor: .controlBackgroundColor).opacity(0.6)
 }
