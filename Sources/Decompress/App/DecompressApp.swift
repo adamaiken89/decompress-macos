@@ -11,7 +11,7 @@ struct DecompressApp: App {
       ContentView()
         .environment(viewModel)
         .windowVisualEffect()
-        .frame(minWidth: 560, minHeight: 620)
+        .frame(minWidth: 360, minHeight: 260)
     }
     .windowResizability(.contentMinSize)
     .commands {

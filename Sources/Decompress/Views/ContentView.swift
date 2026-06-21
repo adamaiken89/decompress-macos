@@ -9,9 +9,11 @@ struct ContentView: View {
   var body: some View {
     if viewModel.launchedByFileOpen {
       LiteContentView()
+        .fixedSize()
         .transition(.scale.combined(with: .opacity))
     } else {
       fullContent
+        .frame(minWidth: 560, minHeight: 620)
     }
   }
 
