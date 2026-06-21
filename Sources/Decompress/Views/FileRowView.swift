@@ -64,7 +64,7 @@ struct FileRowView: View {
         .onEnded { onDoubleClick() }
     )
     .contextMenu {
-      Button(loc("Preview")) {
+      Button(loc("Browse")) {
         onPreview()
       }
     }

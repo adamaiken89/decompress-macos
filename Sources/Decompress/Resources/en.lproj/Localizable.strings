@@ -16,7 +16,7 @@
 "Extract files directly into the source directory instead of a subfolder" = "Extract files directly into the source directory instead of a subfolder";
 "Extract All" = "Extract";
 "Begin extraction of all selected archives" = "Begin extraction of all selected archives";
-"Preview" = "Preview";
+"Browse" = "Browse";
 "Browse archive contents before extraction" = "Browse archive contents before extraction";
 "Deselect All" = "Deselect All";
 
@@ -58,7 +58,6 @@
 
 // FileRowView
 "unknown format" = "unknown format";
-"Preview" = "Preview";
 "%@, %@" = "%@, %@";
 "Remove %@" = "Remove %@";
 

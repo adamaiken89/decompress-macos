@@ -182,7 +182,7 @@ struct DragDropView: View {
           .keyboardShortcut(.escape)
           .disabled(viewModel.selectedURLs.isEmpty)
 
-          Button(loc("Preview")) {
+          Button(loc("Browse")) {
             viewModel.previewArchives()
           }
           .secondaryButton()

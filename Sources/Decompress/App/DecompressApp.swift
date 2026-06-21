@@ -10,7 +10,6 @@ struct DecompressApp: App {
     WindowGroup {
       ContentView()
         .environment(viewModel)
-        .windowVisualEffect()
         .frame(
           width: DesignConstants.Layout.windowWidth, height: DesignConstants.Layout.windowHeight)
     }
