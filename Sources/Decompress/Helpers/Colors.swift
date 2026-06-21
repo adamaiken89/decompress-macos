@@ -9,14 +9,14 @@ enum AppColors {
   static let dzHint = Color.secondary
   static let dzBorderDefault = Color(nsColor: .separatorColor)
   static let dzBorderActive = Color.accentColor
-  static let dzShadowDefault = Color.black.opacity(0.05)
-  static let dzShadowActive = Color.black.opacity(0.15)
+  static let dzShadowDefault = Color(nsColor: .separatorColor)
+  static let dzShadowActive = Color.secondary
 
   // MARK: - File Row
   static let frIcon = Color.secondary
   static let frFormatLabel = Color.secondary
   static let frRemoveButton = Color.secondary
-  static let frHoverBackground = Color.accentColor.opacity(0.06)
+  static let frHoverBackground = Color(nsColor: .selectedControlColor)
 
   // MARK: - Password Prompt
   static let ppKeyIcon = Color.accentColor
@@ -66,8 +66,8 @@ enum AppColors {
   static let stFormatExtension = Color.secondary
 
   // MARK: - Backgrounds
-  static let bgCard = Color(nsColor: .windowBackgroundColor).opacity(0.85)
-  static let bgSection = Color(nsColor: .windowBackgroundColor).opacity(0.8)
-  static let bgRow = Color(nsColor: .controlBackgroundColor).opacity(0.7)
-  static let bgBadge = Color(nsColor: .controlBackgroundColor).opacity(0.6)
+  static let bgCard = Color(nsColor: .windowBackgroundColor)
+  static let bgSection = Color(nsColor: .windowBackgroundColor)
+  static let bgRow = Color(nsColor: .controlBackgroundColor)
+  static let bgBadge = Color(nsColor: .controlBackgroundColor)
 }

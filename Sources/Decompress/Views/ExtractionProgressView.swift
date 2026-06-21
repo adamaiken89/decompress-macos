@@ -5,8 +5,6 @@ struct ExtractionProgressView: View {
   private var viewModel
 
   @State private var now = Date()
-  @State private var pulsePhase = false
-
   var body: some View {
     VStack(spacing: DesignConstants.Spacing.pageWide) {
       Spacer()
@@ -41,8 +39,6 @@ struct ExtractionProgressView: View {
             .foregroundStyle(AppColors.epFileName)
             .lineLimit(1)
             .truncationMode(.middle)
-            .opacity(pulsePhase ? 1 : 0.7)
-            .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: pulsePhase)
             .accessibilityLabel(String(format: loc("Current file: %@"), currentFile))
 
           HStack(spacing: DesignConstants.Spacing.progressContent) {
@@ -94,11 +90,7 @@ struct ExtractionProgressView: View {
     .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { input in
       now = input
     }
-    .onAppear {
-      withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
-        pulsePhase = true
-      }
-    }
+
   }
 
   private func formattedDuration(_ duration: TimeInterval) -> String {

@@ -43,7 +43,6 @@ struct FileRowView: View {
       }
       .buttonStyle(.plain)
       .foregroundStyle(AppColors.frRemoveButton)
-      .opacity(isHovered ? 1 : 0.3)
       .help(String(format: loc("Remove %@"), url.lastPathComponent))
       .accessibilityLabel(String(format: loc("Remove %@"), url.lastPathComponent))
     }
