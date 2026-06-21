@@ -78,7 +78,7 @@ Tests/
 - **No comments** in source code.
 - **2-space indentation** (not tabs, not 4-space).
 - **`loc("key")`** for all user-facing strings (wraps `NSLocalizedString`).
-- **`DesignConstants`** for all spacing/font/padding values — do not hardcode.
+- **`DesignConstants`** for all spacing/font/padding/layout values — do not hardcode. Includes `Spacing`, `Padding`, `FontSize`, and `Layout` (frame widths, spinner scale).
 - **`AppColors`** for all colors — do not use system colors directly.
 - **Button style modifiers**: `.primaryButton()`, `.secondaryButton()`, `.inlineButton()`.
 - **Background modifiers**: `.sectionBackground()`, `.cardBackground()`, `.rowBackground()`.

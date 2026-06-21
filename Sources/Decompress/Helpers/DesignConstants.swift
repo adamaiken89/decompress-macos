@@ -40,6 +40,15 @@ enum DesignConstants {
   enum FontSize {
     static let largeIcon: CGFloat = 80
     static let icon: CGFloat = 64
+    static let statusIcon: CGFloat = 32
+    static let smallIcon: CGFloat = 28
+  }
+
+  enum Layout {
+    static let passwordCardWidth: CGFloat = 280
+    static let progressBarWidth: CGFloat = 260
+    static let messageMaxWidth: CGFloat = 300
+    static let spinnerScale: CGFloat = 1.1
   }
 
   enum Font {

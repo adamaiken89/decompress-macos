@@ -34,7 +34,7 @@ struct LiteContentView: View {
     VStack(spacing: 12) {
       VStack(spacing: 6) {
         Image(systemName: "doc.zipper")
-          .font(.system(size: 28))
+          .font(.system(size: DesignConstants.FontSize.smallIcon))
           .foregroundStyle(AppColors.dzIconDefault)
 
         Text(viewModel.selectedURLs.first?.lastPathComponent ?? "")
@@ -56,7 +56,7 @@ struct LiteContentView: View {
       }
       .padding(DesignConstants.Padding.extraCompact)
       .cardBackground()
-      .frame(width: 280)
+      .frame(width: DesignConstants.Layout.passwordCardWidth)
 
       Button(loc("Extract All")) {
         viewModel.extractAll()
@@ -70,7 +70,7 @@ struct LiteContentView: View {
   private var litePreparingView: some View {
     VStack(spacing: 10) {
       ProgressView()
-        .scaleEffect(1.1)
+        .scaleEffect(DesignConstants.Layout.spinnerScale)
       Text(loc("Preparing..."))
         .font(DesignConstants.Font.subheadline)
         .fontWeight(.medium)
@@ -86,7 +86,7 @@ struct LiteContentView: View {
             .fontWeight(.medium)
 
           ProgressView(value: progress, total: 1.0)
-            .frame(width: 260)
+            .frame(width: DesignConstants.Layout.progressBarWidth)
             .tint(AppColors.epProgressTint)
 
           Text(currentFile)
@@ -97,7 +97,7 @@ struct LiteContentView: View {
         }
       } else {
         ProgressView()
-          .scaleEffect(1.1)
+          .scaleEffect(DesignConstants.Layout.spinnerScale)
         Text(loc("Extracting..."))
           .font(DesignConstants.Font.subheadline)
           .fontWeight(.medium)
@@ -109,14 +109,14 @@ struct LiteContentView: View {
     VStack(spacing: 10) {
       if batchResult.allSucceeded {
         Image(systemName: "checkmark.circle.fill")
-          .font(.system(size: 32))
+          .font(.system(size: DesignConstants.FontSize.statusIcon))
           .foregroundStyle(AppColors.ecSuccessIcon)
         Text(loc("Extraction Complete"))
           .font(DesignConstants.Font.subheadline)
           .fontWeight(.semibold)
       } else {
         Image(systemName: "xmark.circle.fill")
-          .font(.system(size: 32))
+          .font(.system(size: DesignConstants.FontSize.statusIcon))
           .foregroundStyle(AppColors.efIcon)
         Text(loc("Extraction Failed"))
           .font(DesignConstants.Font.subheadline)
@@ -129,7 +129,7 @@ struct LiteContentView: View {
             .multilineTextAlignment(.center)
             .padding(DesignConstants.Padding.extraCompact)
             .cardBackground()
-            .frame(maxWidth: 300)
+            .frame(maxWidth: DesignConstants.Layout.messageMaxWidth)
         }
 
         Button(loc("Try Again")) {
@@ -144,7 +144,7 @@ struct LiteContentView: View {
   private func liteFailedView(_ message: String) -> some View {
     VStack(spacing: 10) {
       Image(systemName: "xmark.circle.fill")
-        .font(.system(size: 32))
+        .font(.system(size: DesignConstants.FontSize.statusIcon))
         .foregroundStyle(AppColors.efIcon)
 
       Text(loc("Extraction Failed"))
@@ -157,7 +157,7 @@ struct LiteContentView: View {
         .multilineTextAlignment(.center)
         .padding(DesignConstants.Padding.extraCompact)
         .cardBackground()
-        .frame(maxWidth: 300)
+        .frame(maxWidth: DesignConstants.Layout.messageMaxWidth)
 
       Button(loc("Try Again")) {
         viewModel.reset()
