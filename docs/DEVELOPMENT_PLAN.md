@@ -1,6 +1,6 @@
 # Decompress — Development Plan
 
-> Implementation plans for all recommended features, ordered by effort.
+> Implementation plans for remaining features, ordered by effort.
 
 ---
 
@@ -24,11 +24,9 @@
 | Tool | Install | Used For |
 |---|---|---|
 | `unar` | `brew install unar` | 7Z, RAR, SPLIT extraction; archive listing |
-| `unxz` | `brew install xz` | XZ extraction (currently broken — see Bug #0) |
+| `unxz` | `brew install xz` | XZ decompression |
 
 ### Minimum dependency for ALL features
-
-If every feature in this plan is implemented, the user needs:
 
 ```
 Mandatory:    (none — everything in macOS 15+)
@@ -44,60 +42,9 @@ No external Swift dependencies. No frameworks beyond SwiftUI + Foundation.
 
 ---
 
-## Bug #0 (Fix First) ✅
-
-### XZ extraction uses hardcoded `/usr/bin/unxz` which does not exist — **FIXED**
-
-**File:** `Sources/Decompress/Services/DecompressionService.swift:73`
-
-```swift
-// Fixed: uses findTool("unxz") which searches /opt/homebrew/bin, /usr/local/bin, /usr/bin
-```
-
-**Fix:** Replaced `extractSingleFile` hardcoded paths with a `findTool(_:)` method that searches:
-1. `/opt/homebrew/bin/<tool>`
-2. `/usr/local/bin/<tool>`
-3. `/usr/bin/<tool>`
-
-Same pattern already used for `unarURL`. Extracted into a shared helper.
-
-**Files:**
-- `DecompressionService.swift` — added `static func findTool(_ name: String) -> URL?`
-- `extractSingleFile` now uses `findTool`
-- Direct `/usr/bin/ditto`, `/usr/bin/unzip`, `/usr/bin/tar` replaced too for consistency
-
----
-
 ## Phase 1: Quick Wins (1–2 days each)
 
-### P1.1 — Batch extraction progress across archives ✅
-
-**Problem:** `extractAll()` iterates over URLs but the progress only reflects the current archive's internal progress. If user drops 3 ZIPs, they see 0→100% three times with no indicator of "archive 2 of 3."
-
-**Solution:**
-
-1. **ViewModel:** Add `currentArchiveIndex: Int` and `totalArchives: Int` to `ExtractionState.extracting` or as separate properties.
-
-   ```swift
-   // In ExtractionState
-   case extracting(progress: Double, currentFile: String,
-                   archiveIndex: Int, totalArchives: Int)
-   ```
-
-2. **In `extractAll()`:** After capturing `urls`, set `totalArchives = urls.count`. On each archive completion, increment `archiveIndex`.
-
-3. **ExtractionProgressView:** Show "Archive 2 of 3" subtitle.
-
-**Dependencies:** None.
-
-**Files:**
-- `ExtractionResult.swift` — update `ExtractionState.extracting` ✅
-- `DecompressViewModel.swift` — update `extractAll()` ✅
-- `ExtractionProgressView.swift` — show archive counter ✅
-
----
-
-### P1.2 — Open extracted folder (not just Reveal) ✅
+### P1.2 — Open extracted folder (not just Reveal)
 
 **Problem:** "Reveal in Finder" selects the file in Finder. Users often want to open the folder to browse contents.
 
@@ -114,11 +61,11 @@ Add to `ExtractionCompletedView` alongside "Reveal in Finder."
 **Dependencies:** None.
 
 **Files:**
-- `ExtractionCompletedView.swift` — add button ✅
+- `ExtractionCompletedView.swift` — add button
 
 ---
 
-### P1.3 — Copy extracted path to clipboard ✅
+### P1.3 — Copy extracted path to clipboard
 
 **Problem:** Power users need the extracted path for terminal/script workflows.
 
@@ -136,87 +83,11 @@ Could also add a small copy icon next to the destination path in the result summ
 **Dependencies:** None.
 
 **Files:**
-- `ExtractionCompletedView.swift` — add copy button ✅
-
----
-
-### P1.4 — Hide near-zero duration in completed view ✅
-
-**Problem:** Most extractions complete in <1s, showing "0s" — useless noise.
-
-**Solution:**
-
-In `ExtractionResult.formattedDuration`, return nil when < 1.0 seconds. Hide the duration row in `ExtractionCompletedView` when nil.
-
-```swift
-var formattedDuration: String? {
-    guard duration >= 1.0 else { return nil }
-    return formatter.string(from: duration) ?? "\(Int(duration))s"
-}
-```
-
-**Dependencies:** None.
-
-**Files:**
-- `ExtractionResult.swift` — make `formattedDuration` optional ✅
-- `ExtractionCompletedView.swift` — conditionally show duration ✅
-
----
-
-### P1.5 — Trash source archive from Failed view ✅
-
-**Problem:** When extraction fails (corrupt archive), the source file remains. User must manually clean up.
-
-**Solution:**
-
-Add "Move to Trash" (`Cmd+Delete`) button to `ExtractionFailedView`. It gets the source URL from the last failed extraction (needs to be captured in state).
-
-1. **ViewModel:** Add `lastFailedSourceURL: URL?` property, set during `extractAll()` catch block.
-2. **ExtractionFailedView:** Add button that calls `FileManager.default.trashItem(at:)`.
-
-**Dependencies:** None.
-
-**Files:**
-- `DecompressViewModel.swift` — add `lastFailedSourceURL` ✅
-- `ExtractionFailedView.swift` — add Trash button ✅
+- `ExtractionCompletedView.swift` — add copy button
 
 ---
 
 ## Phase 2: Medium Features (3–5 days each)
-
-### P2.1 — Unified tool path resolution + XZ fix ✅
-
-**Problem:** Multiple hardcoded `/usr/bin/` paths spread across the service. `unxz` at `/usr/bin/unxz` doesn't exist. `unarURL` already has the right pattern.
-
-**Solution:**
-
-Replace all hardcoded paths with a shared `findTool(_:)` method:
-
-```swift
-static func findTool(_ name: String) -> URL? {
-    let candidates = [
-        "/opt/homebrew/bin/\(name)",
-        "/usr/local/bin/\(name)",
-        "/usr/bin/\(name)"
-    ]
-    for path in candidates {
-        if FileManager.default.fileExists(atPath: path) {
-            return URL(fileURLWithPath: path)
-        }
-    }
-    return nil
-}
-```
-
-Apply to: `ditto`, `unzip`, `tar`, `gunzip`, `bunzip2`, `unxz`, `unar`.
-
-**Dependencies:** None (fixes existing XZ bug).
-
-**Files:**
-- `DecompressionService.swift` — add `findTool(_:)`, refactor all tool paths ✅
-- `.swiftlint.yml` — no changes needed ✅
-
----
 
 ### P2.2 — Keychain password integration
 
@@ -284,6 +155,8 @@ Combined: Install the Quick Action → right-click archive → "Quick Actions" �
 
 Then in `DecompressApp.swift`, handle `NSApplicationDelegate` `application(_:openFile:)` or `onOpenURL`.
 
+**Status:** Partially done — `CFBundleDocumentTypes` in Info.plist registers file extensions but uses `CFBundleTypeExtensions` not `LSItemContentTypes`. No URL scheme or Quick Action workflow.
+
 **Dependencies:** None.
 
 **Files:**
@@ -350,6 +223,8 @@ Use available tools to list archive contents without extracting:
 3. **New View:** `ArchivePreviewView` — sheet or popover showing file tree, total size, file count. "Extract" button at bottom.
 
 4. **DragDropView:** Add "Preview" button (eye icon) next to each file in the selected list. Or add a "Preview" button before Extract All.
+
+**Status:** Partially done — `listContents(of:)` exists in `DecompressionService+ContentListing`. ViewModel has `previewArchives()` + `ExtractionState.browsing` + `ArchiveContentView` (full-screen file list with checkboxes). Differs from plan: uses full state transition instead of sheet/popover.
 
 **Dependencies:** Depends on `unar` for 7Z/RAR/SPLIT preview. ZIP and TAR use bundled tools.
 
@@ -541,6 +416,8 @@ NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: 
 
 Use `.transition(.opacity.combined(with: .scale))` on ContentView's state-switching views. Or `.matchedGeometryEffect` for shared elements.
 
+**Status:** Partial — ContentView uses `.spring` animation on `extractionState` changes with `.scale.combined(with: .opacity)` transitions. No `matchedGeometryEffect`.
+
 **Files:** `ContentView.swift`
 
 ### P4.3 — Window title updates
@@ -568,15 +445,15 @@ Instead of switching views instantly, show a brief animated banner "Extraction C
 
 ---
 
-## Uselessness Cleanup (integrate into other phases)
+## Remaining Cleanup
 
-| Issue | Phase | Fix |
-|---|---|---|
-| ZIP-only encryption detection | P2.2 | Unify: always show password toggle when encrypted format detected. Remove `isZipEncrypted` in favor of `unar` output parsing for all formats. |
-| `FileRowView` accessibility `.combine` | P1.1 | Change to `.contain` so remove button is individually accessible. |
-| UI tests target not in Package.swift | P1.1 | Add `DecompressUITests` target to `Package.swift` (depends on `Decompress` target). |
-| `showHelp` as ViewModel property | P4.2 | Replace with `@FocusedValue` or `@Environment(\.openWindow)` for native SwiftUI window control. |
-| Toolbar Clear button hidden when idle | P1.1 | Always show, disabled when idle. Remove conditional `hide` logic. |
+| Issue | Phase | Fix | Status |
+|---|---|---|---|
+| ZIP-only encryption detection | P2.2 | Unify: always show password toggle when encrypted format detected. Remove `isZipEncrypted` in favor of `unar` output parsing for all formats. | ❌ |
+| `FileRowView` accessibility `.combine` | P1.1 | Change to `.contain` so remove button is individually accessible. | ✅ Already `.contain` |
+| UI tests target not in Package.swift | P1.1 | Add `DecompressUITests` target to `Package.swift` (depends on `Decompress` target). | ❌ |
+| `showHelp` as ViewModel property | P4.2 | Replace with `@FocusedValue` or `@Environment(\.openWindow)` for native SwiftUI window control. | ❌ Still in ViewModel (`.openWindow` added but boolean remains) |
+| Toolbar Clear button hidden when idle | P1.1 | Always show, disabled when idle. Remove conditional `hide` logic. | ✅ Always visible, disabled when empty |
 
 ---
 
@@ -584,13 +461,8 @@ Instead of switching views instantly, show a brief animated banner "Extraction C
 
 | Feature | `unar` | `xz` | System tools only |
 |---|---|---|---|
-| Bug #0: XZ path fix ✅ | | ✓ (unxz) | ✓ |
-| P1.1 Batch progress ✅ | | | ✓ |
-| P1.2 Open folder ✅ | | | ✓ |
-| P1.3 Copy path ✅ | | | ✓ |
-| P1.4 Hide zero duration ✅ | | | ✓ |
-| P1.5 Trash on fail ✅ | | | ✓ |
-| P2.1 Tool path resolution ✅ | | ✓ | ✓ |
+| P1.2 Open folder | | | ✓ |
+| P1.3 Copy path | | | ✓ |
 | P2.2 Keychain passwords | | | ✓ |
 | P2.3 Quick Action / UTI | | | ✓ |
 | P2.4 Recent archives | | | ✓ |
@@ -602,24 +474,21 @@ Instead of switching views instantly, show a brief animated banner "Extraction C
 | P3.5 Settings profiles | | | ✓ |
 | P4.1–4.5 Polish | | | ✓ |
 
-**Takeaway:** Only **2 features** truly need `unar`. Everything else runs on system tools. The `xz` package is only needed for XZ/TAR.XZ support, which is already a stated format target.
+**Takeaway:** Only **2 features** truly need `unar`. Everything else runs on system tools.
 
 ---
 
 ## Recommended Build Order
 
 ```
-Week 1:  Bug #0 + P1.1 + P1.2 + P1.3 + P1.4 + P1.5 + Cleanup ✅
-         → Solid UX improvements, no new deps
+Week 1:  P1.2 + P1.3 + remaining cleanup
+         → Open folder, copy path, fix UITests target, showHelp refactor
 
-Week 2:  P2.1 + P2.3 + P2.4 ✅ (P2.1 done)
-         → Tool resolution reliability + Finder integration + history
-
-Week 2:  P2.1 + P2.3 + P2.4
-         → Tool resolution reliability + Finder integration + history
+Week 2:  P2.3 + P2.4
+         → Finder UTI registration + recent archives history
 
 Week 3:  P2.2 + P2.5
-         → Keychain + preview (unar dep)
+         → Keychain + preview polish (unar dep)
 
 Week 4-5: P3.1
          → Creation (biggest feature, doubles app value)
