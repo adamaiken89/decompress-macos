@@ -290,4 +290,21 @@ final class DecompressViewModelTests: XCTestCase {
     XCTAssertEqual(viewModel.selectedURLs.count, 1)
     XCTAssertEqual(viewModel.selectedURLs[0].lastPathComponent, "archive.part1.rar")
   }
+
+  // MARK: - LaunchMode
+
+  func testLaunchModeDefaultIsStandard() {
+    XCTAssertEqual(viewModel.launchMode, .standard)
+  }
+
+  func testOpenFilesSetsLaunchModeToFileOpen() {
+    viewModel.openFiles([URL(fileURLWithPath: "/tmp/test.zip")])
+    XCTAssertEqual(viewModel.launchMode, .fileOpen)
+  }
+
+  func testResetRestoresStandardLaunchMode() {
+    viewModel.openFiles([URL(fileURLWithPath: "/tmp/test.zip")])
+    viewModel.reset()
+    XCTAssertEqual(viewModel.launchMode, .standard)
+  }
 }

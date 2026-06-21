@@ -3,6 +3,11 @@ import Foundation
 import OSLog
 import Observation
 
+enum LaunchMode {
+  case standard
+  case fileOpen
+}
+
 @Observable
 @MainActor
 final class DecompressViewModel {
@@ -22,7 +27,7 @@ final class DecompressViewModel {
   var lastFailedSourceURL: URL?
   var archiveContents: [ArchiveContent] = []
   var pendingQueue: [[URL]] = []
-  var launchedByFileOpen = false
+  var launchMode: LaunchMode = .standard
 
   var queueCount: Int { pendingQueue.count }
 
@@ -196,32 +201,12 @@ final class DecompressViewModel {
         shouldTrash: shouldTrash,
         selectedEntries: useSelectedEntries
       )
-      extractionTask = nil
-      if !pendingQueue.isEmpty {
-        processNextInQueue()
-      } else {
-        if launchedByFileOpen && result.allSucceeded {
-          launchedByFileOpen = false
-          if let firstSuccess = result.successes.first {
-            NSWorkspace.shared.selectFile(
-              firstSuccess.destinationURL.path,
-              inFileViewerRootedAtPath: firstSuccess.destinationURL
-                .deletingLastPathComponent().path
-            )
-          }
-          Task {
-            try? await Task.sleep(for: .seconds(0.5))
-            NSApplication.shared.terminate(nil)
-          }
-        } else {
-          extractionState = .completed(result)
-        }
-      }
+      handleExtractionCompletion(result)
     }
   }
 
   func openFiles(_ urls: [URL]) {
-    launchedByFileOpen = true
+    launchMode = .fileOpen
     switch extractionState {
     case .preparing, .extracting:
       pendingQueue.append(urls)
@@ -249,12 +234,37 @@ final class DecompressViewModel {
     beginProcessing(next)
   }
 
+  private func handleExtractionCompletion(_ result: BatchResult) {
+    extractionTask = nil
+    if !pendingQueue.isEmpty {
+      processNextInQueue()
+      return
+    }
+
+    if case .fileOpen = launchMode, result.allSucceeded {
+      launchMode = .standard
+      if let firstSuccess = result.successes.first {
+        NSWorkspace.shared.selectFile(
+          firstSuccess.destinationURL.path,
+          inFileViewerRootedAtPath: firstSuccess.destinationURL
+            .deletingLastPathComponent().path
+        )
+      }
+      Task {
+        try? await Task.sleep(for: .seconds(0.5))
+        NSApplication.shared.terminate(nil)
+      }
+    } else {
+      extractionState = .completed(result)
+    }
+  }
+
   func clearQueue() {
     pendingQueue.removeAll()
   }
 
   func reset() {
-    launchedByFileOpen = false
+    launchMode = .standard
     extractionState = .idle
     extractionStartTime = nil
     archiveContents = []

@@ -1,5 +1,9 @@
 # Decompress
 
+<p align="center">
+  <img src="Sources/Decompress/Resources/logo.png" width="256" alt="Decompress logo">
+</p>
+
 A native macOS decompression tool built with SwiftUI — no ads, no subscriptions, just drag-and-drop extraction.
 
 ## Features

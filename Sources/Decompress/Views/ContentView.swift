@@ -7,7 +7,7 @@ struct ContentView: View {
   private var openWindow
 
   var body: some View {
-    if viewModel.launchedByFileOpen {
+    if viewModel.launchMode == .fileOpen {
       LiteContentView()
         .fixedSize()
         .transition(.scale.combined(with: .opacity))
