@@ -7,6 +7,15 @@ struct ContentView: View {
   private var openWindow
 
   var body: some View {
+    if viewModel.launchedByFileOpen {
+      LiteContentView()
+        .transition(.scale.combined(with: .opacity))
+    } else {
+      fullContent
+    }
+  }
+
+  private var fullContent: some View {
     VStack(spacing: DesignConstants.Spacing.zero) {
       switch viewModel.extractionState {
       case .idle:

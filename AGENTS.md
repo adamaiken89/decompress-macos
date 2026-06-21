@@ -49,13 +49,14 @@ Sources/Decompress/
 │   └── DecompressViewModel.swift  # @Observable @MainActor, shared singleton
 ├── Views/
 │   ├── ArchiveContentView.swift   # Archive content browsing with per-file selection
-│   ├── ContentView.swift          # Root: switches by extractionState
+│   ├── ContentView.swift          # Root: switches by extractionState (lite vs full)
 │   ├── DragDropView.swift
 │   ├── ExtractionCompletedView.swift
 │   ├── ExtractionFailedView.swift
 │   ├── ExtractionProgressView.swift
 │   ├── FileRowView.swift
 │   ├── HelpView.swift
+│   ├── LiteContentView.swift      # Minimal UI for file-open launches
 │   ├── PasswordPromptView.swift
 │   └── SettingsView.swift
 └── Resources/
@@ -117,3 +118,5 @@ Tests/
 - Coverage report: `make test-coverage` after a full build. Profdata at `.build/debug/codecov/default.profdata`.
 - Integration tests require real archive files (none committed to repo).
 - `DetectFormatUITests` in CI triggers the menu bar UI test — may fail if accessibility permissions not granted.
+- **Lite UI on file-open**: When `launchedByFileOpen = true`, `ContentView` shows `LiteContentView` instead of full UI. Lite mode: password prompt (if encrypted), progress bar during extraction, auto-quit on success, minimal error view on failure. No toolbar, no drag-drop, no file list, no archive browsing, no extraction-completed detail view. `LiteContentView` handles all `extractionState` cases independently from full UI.
+- **Double-click launch**: `AppDelegate.application(_:open urls:)` sets `viewModel.launchedByFileOpen = true`. On completion, if flag true + `BatchResult.allSucceeded`, auto-reveals first success in Finder, then quits after 0.5s delay. Any failure skips auto-close — shows `LiteContentView`'s minimal failure view (not full `ExtractionCompletedView`). `reset()` clears the flag. Password-protected archives follow same path (user types password in minimal prompt, clicks Extract, then auto-closes on success).

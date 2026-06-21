@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import OSLog
 import Observation
@@ -21,6 +22,7 @@ final class DecompressViewModel {
   var lastFailedSourceURL: URL?
   var archiveContents: [ArchiveContent] = []
   var pendingQueue: [[URL]] = []
+  var launchedByFileOpen = false
 
   var queueCount: Int { pendingQueue.count }
 
@@ -198,12 +200,28 @@ final class DecompressViewModel {
       if !pendingQueue.isEmpty {
         processNextInQueue()
       } else {
-        extractionState = .completed(result)
+        if launchedByFileOpen && result.allSucceeded {
+          launchedByFileOpen = false
+          if let firstSuccess = result.successes.first {
+            NSWorkspace.shared.selectFile(
+              firstSuccess.destinationURL.path,
+              inFileViewerRootedAtPath: firstSuccess.destinationURL
+                .deletingLastPathComponent().path
+            )
+          }
+          Task {
+            try? await Task.sleep(for: .seconds(0.5))
+            NSApplication.shared.terminate(nil)
+          }
+        } else {
+          extractionState = .completed(result)
+        }
       }
     }
   }
 
   func openFiles(_ urls: [URL]) {
+    launchedByFileOpen = true
     switch extractionState {
     case .preparing, .extracting:
       pendingQueue.append(urls)
@@ -236,6 +254,7 @@ final class DecompressViewModel {
   }
 
   func reset() {
+    launchedByFileOpen = false
     extractionState = .idle
     extractionStartTime = nil
     archiveContents = []

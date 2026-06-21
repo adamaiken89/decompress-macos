@@ -9,6 +9,7 @@ A native macOS decompression tool built with SwiftUI — no ads, no subscription
 - **Extract to source directory** or custom location
 - **Progress tracking** during extraction
 - **Multiple formats**: ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR
+- **Auto-close on double-click**: Opening archive via double-click extracts, reveals folder in Finder, then quits
 - **Native macOS UI** — built with SwiftUI, follows platform conventions
 
 ## Requirements
