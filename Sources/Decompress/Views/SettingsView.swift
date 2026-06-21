@@ -12,7 +12,7 @@ struct SettingsView: View {
       formatsTab
         .tabItem { Label(loc("Formats"), systemImage: "doc.zipper") }
     }
-    .frame(width: 500, height: 480)
+    .frame(minWidth: 500, minHeight: 480)
   }
 
   private var generalTab: some View {

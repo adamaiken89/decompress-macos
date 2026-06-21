@@ -151,7 +151,7 @@ struct LiteContentView: View {
             .frame(maxWidth: DesignConstants.Layout.messageMaxWidth)
         }
 
-        Button(loc("Try Again")) {
+        Button(loc("Retry")) {
           viewModel.reset()
         }
         .primaryButton()
@@ -178,7 +178,7 @@ struct LiteContentView: View {
         .cardBackground()
         .frame(maxWidth: DesignConstants.Layout.messageMaxWidth)
 
-      Button(loc("Try Again")) {
+      Button(loc("Retry")) {
         viewModel.reset()
       }
       .primaryButton()

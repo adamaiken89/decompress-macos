@@ -17,7 +17,7 @@ struct DecompressApp: App {
     .defaultSize(
       width: DesignConstants.Layout.windowWidth, height: DesignConstants.Layout.windowHeight
     )
-    .windowResizability(.contentSize)
+    .windowResizability(.contentMinSize)
     .commands {
       CommandGroup(after: .newItem) {
         Button(loc("Open...")) {

@@ -45,8 +45,8 @@ enum DesignConstants {
   }
 
   enum Layout {
-    static let windowWidth: CGFloat = 1200
-    static let windowHeight: CGFloat = 1400
+    static let windowWidth: CGFloat = 400
+    static let windowHeight: CGFloat = 600
     static let passwordCardWidth: CGFloat = 500
     static let progressBarWidth: CGFloat = 480
     static let messageMaxWidth: CGFloat = 560

@@ -13,8 +13,6 @@ struct ContentView: View {
         .transition(.scale.combined(with: .opacity))
     } else {
       fullContent
-        .frame(
-          width: DesignConstants.Layout.windowWidth, height: DesignConstants.Layout.windowHeight)
     }
   }
 

@@ -57,6 +57,7 @@ struct ExtractionCompletedView: View {
         Text(statusTitle)
           .font(DesignConstants.Font.title3)
           .fontWeight(.semibold)
+          .lineLimit(1)
 
         Text(
           String(
@@ -68,6 +69,7 @@ struct ExtractionCompletedView: View {
         .font(DesignConstants.Font.subheadline)
         .foregroundStyle(AppColors.ecSummaryText)
         .monospacedDigit()
+        .lineLimit(1)
       }
 
       Spacer()
@@ -175,7 +177,7 @@ struct ExtractionCompletedView: View {
 
   private var actionButtons: some View {
     HStack(spacing: DesignConstants.Spacing.sectionGroup) {
-      Button(loc("Back to File List")) {
+      Button(loc("Back")) {
         viewModel.reset()
       }
       .secondaryButton()
@@ -183,7 +185,7 @@ struct ExtractionCompletedView: View {
 
       Spacer()
 
-      Button(loc("Reveal in Finder")) {
+      Button(loc("Reveal")) {
         if let firstSuccess = batchResult.successes.first {
           NSWorkspace.shared.selectFile(
             firstSuccess.destinationURL.path,
@@ -203,14 +205,14 @@ struct ExtractionCompletedView: View {
       .disabled(batchResult.totalCount == 0)
 
       if !batchResult.allSucceeded {
-        Button(loc("Try Again")) {
+        Button(loc("Retry")) {
           viewModel.reset()
         }
         .primaryButton()
         .keyboardShortcut(.return)
       }
 
-      Button(loc("Extract Another")) {
+      Button(loc("New")) {
         viewModel.reset()
       }
       .primaryButton()

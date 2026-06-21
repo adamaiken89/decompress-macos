@@ -6,17 +6,28 @@
 
 // DragDropView
 "Drop archives here" = "Drop archives here";
-"ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR" = "ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR";
-"Drag files onto this window  ·  Select Files to browse" = "Drag files onto this window  ·  Select Files to browse";
+"ZIP · TAR · GZIP · BZIP2 · XZ · 7Z · RAR" = "ZIP · TAR · GZIP · BZIP2 · XZ · 7Z · RAR";
+"Click to select or drag files" = "Click to select or drag files";
 "For split archives, only the first part is needed" = "For split archives, only the first part is needed";
 "Drop archives here. Supported formats: ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR" = "Drop archives here. Supported formats: ZIP, TAR, GZIP, BZIP2, XZ, 7Z, RAR";
 "Select Files" = "Select Files";
-"Opens a file picker to choose archive files" = "Opens a file picker to choose archive files";
+"Drop more archives or click to add" = "Drop more archives or click to add";
 "Extract in place" = "Extract in place";
 "Extract files directly into the source directory instead of a subfolder" = "Extract files directly into the source directory instead of a subfolder";
-"Clear" = "Clear";
-"Extract All" = "Extract All";
+"Extract All" = "Extract";
 "Begin extraction of all selected archives" = "Begin extraction of all selected archives";
+"Preview" = "Preview";
+"Browse archive contents before extraction" = "Browse archive contents before extraction";
+"Deselect All" = "Deselect All";
+
+// ArchiveContentView
+"Archive Contents" = "Archive Contents";
+"%d archives, %d total files" = "%1$d archives, %2$d total files";
+"%d files" = "%d files";
+"Select All" = "Select All";
+"No files found in archive" = "No files found in archive";
+"Extract Selected" = "Extract Selected";
+"Back" = "Back";
 
 // ExtractionCompletedView
 "Extraction Complete" = "Extraction Complete";
@@ -24,24 +35,32 @@
 "Extraction Complete with Errors" = "Extraction Complete with Errors";
 "Successful" = "Successful";
 "Failed" = "Failed";
-"Reveal in Finder" = "Reveal in Finder";
-"Move to Trash" = "Move to Trash";
-"Back to File List" = "Back to File List";
-"Try Again" = "Try Again";
-"Extract Another" = "Extract Another";
+"Reveal" = "Reveal";
+"Trash" = "Trash";
+"Back" = "Back";
+"Retry" = "Retry";
+"New" = "New";
 "Extraction completed" = "Extraction completed";
+"%d of %d files extracted successfully" = "%1$d of %2$d files extracted successfully";
 
 // ExtractionFailedView
-"Move to Trash" = "Move to Trash";
-"Try Again" = "Try Again";
+"Retry" = "Retry";
 
 // ExtractionProgressView
+"Preparing..." = "Preparing...";
 "Extracting..." = "Extracting...";
 "Extraction progress" = "Extraction progress";
 "Cancel" = "Cancel";
+"Current file: %@" = "Current file: %@";
+"Archive %d of %d" = "Archive %1$d of %2$d";
+"%d more in queue" = "%d more in queue";
+"%d archives waiting in queue" = "%d archives waiting in queue";
 
 // FileRowView
 "unknown format" = "unknown format";
+"Preview" = "Preview";
+"%@, %@" = "%@, %@";
+"Remove %@" = "Remove %@";
 
 // HelpView
 "Usage" = "Usage";
@@ -52,19 +71,19 @@
 "1" = "1";
 "Drop archives onto the main window, or click Select Files to browse." = "Drop archives onto the main window, or click Select Files to browse.";
 "2" = "2";
-"If the archive is password-protected, enable the toggle and enter the password." = "If the archive is password-protected, enable the toggle and enter the password.";
+"If the archive is password-protected, enter the password." = "If the archive is password-protected, enter the password.";
 "3" = "3";
-"Choose whether to extract in place (files go directly into the source directory)." = "Choose whether to extract in place (files go directly into the source directory).";
+"Choose whether to extract in place." = "Choose whether to extract in place.";
 "4" = "4";
 "Click Extract All. Progress is shown during extraction." = "Click Extract All. Progress is shown during extraction.";
 "5" = "5";
-"When complete, click Reveal in Finder to locate the extracted files." = "When complete, click Reveal in Finder to locate the extracted files.";
+"When complete, click Reveal in Finder to locate files." = "When complete, click Reveal in Finder to locate files.";
 "Adding files" = "Adding files";
 "Drag and drop one or more archive files onto the drop zone." = "Drag and drop one or more archive files onto the drop zone.";
 "Click Select Files to use the system file picker." = "Click Select Files to use the system file picker.";
 "Supported formats are detected automatically by extension and magic bytes." = "Supported formats are detected automatically by extension and magic bytes.";
 "Extraction behavior" = "Extraction behavior";
-"By default, each archive extracts into a subfolder named after the archive (e.g., project.zip -> project/)." = "By default, each archive extracts into a subfolder named after the archive (e.g., project.zip -> project/).";
+"By default, each archive extracts into a subfolder named after the archive (e.g., project.zip → project/)." = "By default, each archive extracts into a subfolder named after the archive (e.g., project.zip → project/).";
 "Enable Extract in place to extract directly into the source directory." = "Enable Extract in place to extract directly into the source directory.";
 "In Settings, you can choose a custom default output directory." = "In Settings, you can choose a custom default output directory.";
 "Enable Move archive to Trash to clean up the original after extraction." = "Enable Move archive to Trash to clean up the original after extraction.";
@@ -74,7 +93,7 @@
 "Cmd+E" = "Cmd+E";
 "Extract all selected archives" = "Extract all selected archives";
 "Cmd+Shift+O" = "Cmd+Shift+O";
-"Open Settings (output directory)" = "Open Settings (output directory)";
+"Open Settings" = "Open Settings";
 "Cmd+?" = "Cmd+?";
 "Open this help window" = "Open this help window";
 "Troubleshooting" = "Troubleshooting";
@@ -85,6 +104,10 @@
 "If a format is not detected, try renaming the file to include a standard extension." = "If a format is not detected, try renaming the file to include a standard extension.";
 "For split archives (e.g., .part01.rar, .7z.001), only the first part is needed — additional parts are automatically detected." = "For split archives (e.g., .part01.rar, .7z.001), only the first part is needed — additional parts are automatically detected.";
 "About Decompress" = "About Decompress";
+
+// HelpView - magic description
+"no magic bytes" = "no magic bytes";
+"magic: %@" = "magic: %@";
 
 // PasswordPromptView
 "Enter password" = "Enter password";
@@ -107,41 +130,29 @@
 
 // Format strings (interpolated)
 "Selected %d files" = "Selected %d files";
-"%d of %d files extracted successfully" = "%d of %d files extracted successfully";
-"Current file: %@" = "Current file: %@";
-"Archive %d of %d" = "Archive %d of %d";
 "Extraction failed: %@" = "Extraction failed: %@";
-"Remove %@" = "Remove %@";
-"%@, %@" = "%@, %@";
 
 // ServiceError
 "Unsupported archive format: %@" = "Unsupported archive format: %@";
 "File not found: %@" = "File not found: %@";
-"Extraction failed: %@" = "Extraction failed: %@";
 "Could not create destination: %@" = "Could not create destination: %@";
 "Process error: %@" = "Process error: %@";
 "Password is required for this archive" = "Password is required for this archive";
 "Required tool not found: %1$@. Install with: brew install %1$@" = "Required tool not found: %1$@. Install with: brew install %1$@";
 
 // DecompressionService (progress)
-"Preparing..." = "Preparing...";
 "Extracting ZIP..." = "Extracting ZIP...";
 "Extracting encrypted ZIP..." = "Extracting encrypted ZIP...";
 "Extracting TAR..." = "Extracting TAR...";
-"Extracting..." = "Extracting...";
+"Extracting selected files..." = "Extracting selected files...";
 "Done" = "Done";
 "Exit code %d" = "Exit code %d";
 
 // ViewModel
 "Could not detect format for %@" = "Could not detect format for %@";
 
-// HelpView - magic description
-"no magic bytes" = "no magic bytes";
-"magic: %@" = "magic: %@";
-
 // DecompressApp
 "Open..." = "Open...";
-"Extract All" = "Extract All";
 "Decompress Help" = "Decompress Help";
 
 // SettingsView - about text

@@ -29,7 +29,6 @@ struct ExtractionProgressView: View {
             .fontWeight(.medium)
 
           ProgressView(value: progress, total: 1.0)
-            .frame(maxWidth: DesignConstants.Layout.progressBarWidth)
             .tint(AppColors.epProgressTint)
             .animation(.spring(response: 0.3, dampingFraction: 0.8), value: progress)
             .accessibilityLabel(loc("Extraction progress"))
@@ -59,7 +58,6 @@ struct ExtractionProgressView: View {
         }
         .padding(DesignConstants.Padding.progressCard)
         .cardBackground(cornerRadius: 14)
-        .frame(maxWidth: DesignConstants.Layout.progressCardMaxWidth)
         .transition(.scale.combined(with: .opacity))
       }
 

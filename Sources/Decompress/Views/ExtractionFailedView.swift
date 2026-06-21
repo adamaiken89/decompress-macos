@@ -30,17 +30,16 @@ struct ExtractionFailedView: View {
         .fixedSize(horizontal: false, vertical: true)
         .padding(DesignConstants.Padding.group)
         .cardBackground()
-        .frame(maxWidth: DesignConstants.Layout.failedCardMaxWidth)
 
       HStack(spacing: DesignConstants.Spacing.sectionGroup) {
-        Button(loc("Try Again")) {
+        Button(loc("Retry")) {
           viewModel.reset()
         }
         .primaryButton()
         .keyboardShortcut(.return)
 
         if let sourceURL = viewModel.lastFailedSourceURL {
-          Button(loc("Move to Trash")) {
+          Button(loc("Trash")) {
             try? FileManager.default.trashItem(at: sourceURL, resultingItemURL: nil)
             viewModel.reset()
           }

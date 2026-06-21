@@ -52,7 +52,7 @@ struct HelpView: View {
           bullet(loc("Enable Move archive to Trash to clean up the original after extraction."))
         }
       }
-      .frame(maxWidth: 520, alignment: .leading)
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding()
   }
@@ -88,7 +88,7 @@ struct HelpView: View {
           .cardBackground(cornerRadius: 8)
         }
       }
-      .frame(maxWidth: 520, alignment: .leading)
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding()
   }
@@ -140,7 +140,7 @@ struct HelpView: View {
           .cardBackground()
         }
       }
-      .frame(maxWidth: 520, alignment: .leading)
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding()
   }

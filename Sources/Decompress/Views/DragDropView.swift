@@ -109,6 +109,7 @@ struct DragDropView: View {
       Text(loc("Drop more archives or click to add"))
         .font(DesignConstants.Font.subheadline)
         .foregroundStyle(AppColors.dzSubtitle)
+        .lineLimit(1)
 
       Spacer()
 

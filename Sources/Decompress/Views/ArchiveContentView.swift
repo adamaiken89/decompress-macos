@@ -15,7 +15,6 @@ struct ArchiveContentView: View {
 
       if viewModel.isPasswordProtected {
         PasswordPromptView()
-          .frame(maxWidth: DesignConstants.Layout.passwordCardWidth)
       }
 
       actionButtons
@@ -82,6 +81,7 @@ struct ArchiveContentView: View {
           .font(DesignConstants.Font.headline)
         Text(content.archiveName)
           .font(DesignConstants.Font.body)
+          .lineLimit(1)
         Spacer()
         if content.listError == nil {
           Text(String(format: loc("%d files"), content.entries.count))
@@ -134,7 +134,10 @@ struct ArchiveContentView: View {
         .padding(.vertical, DesignConstants.Padding.verticalCompact)
 
       ForEach(content.entries.filter { !$0.isDirectory }) { entry in
-        entryRow(entry, archiveURL: content.sourceURL)
+        ArchiveEntryRow(
+          entry: entry,
+          isSelected: toggleBinding(for: entry, archiveURL: content.sourceURL)
+        )
       }
 
       if content.entries.filter({ !$0.isDirectory }).isEmpty {
@@ -145,39 +148,6 @@ struct ArchiveContentView: View {
           .padding(.leading, DesignConstants.Padding.leadingTight)
       }
     }
-  }
-
-  private func entryRow(_ entry: ArchiveEntry, archiveURL: URL) -> some View {
-    let binding = toggleBinding(for: entry, archiveURL: archiveURL)
-    return HStack(spacing: DesignConstants.Spacing.sectionHeader) {
-      Toggle(isOn: binding) {
-        HStack(spacing: DesignConstants.Spacing.relatedContent) {
-          Image(systemName: "doc")
-            .foregroundStyle(AppColors.acDocIcon)
-            .font(DesignConstants.Font.caption)
-            .accessibilityHidden(true)
-
-          Text(entry.path)
-            .font(DesignConstants.Font.body)
-            .lineLimit(1)
-
-          Spacer()
-
-          if entry.size > 0 {
-            Text(formattedSize(entry.size))
-              .font(DesignConstants.Font.caption)
-              .foregroundStyle(AppColors.acFileSize)
-              .monospacedDigit()
-          }
-        }
-      }
-      .toggleStyle(.checkbox)
-    }
-    .padding(.vertical, DesignConstants.Padding.verticalCompact)
-    .padding(.horizontal, DesignConstants.Padding.horizontalExtraTight)
-    .contentShape(Rectangle())
-    .onTapGesture { binding.wrappedValue.toggle() }
-    .rowBackground(cornerRadius: 4)
   }
 
   private func toggleBinding(for entry: ArchiveEntry, archiveURL: URL) -> Binding<Bool> {
@@ -191,10 +161,6 @@ struct ArchiveContentView: View {
         }
       }
     )
-  }
-
-  private func formattedSize(_ size: Int64) -> String {
-    ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
   }
 
   private func initializeSelection() {
@@ -227,5 +193,58 @@ struct ArchiveContentView: View {
       .keyboardShortcut("e")
       .disabled(selectedPaths.values.allSatisfy(\.isEmpty))
     }
+  }
+}
+
+private struct ArchiveEntryRow: View {
+  let entry: ArchiveEntry
+  @Binding var isSelected: Bool
+  @State private var isHovered = false
+
+  var body: some View {
+    HStack(spacing: DesignConstants.Spacing.sectionHeader) {
+      Toggle(isOn: $isSelected) {
+        HStack(spacing: DesignConstants.Spacing.relatedContent) {
+          Image(systemName: "doc")
+            .foregroundStyle(AppColors.acDocIcon)
+            .font(DesignConstants.Font.caption)
+            .accessibilityHidden(true)
+
+          Text(entry.path)
+            .font(DesignConstants.Font.body)
+            .lineLimit(1)
+        }
+      }
+      .toggleStyle(.checkbox)
+
+      Spacer()
+
+      if entry.size > 0 {
+        Text(formattedSize(entry.size))
+          .font(DesignConstants.Font.caption)
+          .foregroundStyle(AppColors.acFileSize)
+          .monospacedDigit()
+      }
+    }
+    .padding(.vertical, DesignConstants.Padding.verticalCompact)
+    .padding(.horizontal, DesignConstants.Padding.horizontalExtraTight)
+    .contentShape(Rectangle())
+    .background {
+      GeometryReader { geo in
+        Rectangle()
+          .fill(isHovered ? AppColors.frHoverBackground : AppColors.bgRow)
+          .clipShape(RoundedRectangle(cornerRadius: 4))
+          .onHover { hovering in
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+              isHovered = hovering
+            }
+          }
+      }
+    }
+    .onTapGesture { isSelected.toggle() }
+  }
+
+  private func formattedSize(_ size: Int64) -> String {
+    ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
   }
 }
