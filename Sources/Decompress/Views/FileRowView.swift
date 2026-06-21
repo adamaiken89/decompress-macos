@@ -56,6 +56,7 @@ struct FileRowView: View {
     .background(
       isHovered ? AppColors.frHoverBackground : .clear, in: RoundedRectangle(cornerRadius: 6)
     )
+    .contentShape(Rectangle())
     .onTapGesture {
       onPreview()
     }

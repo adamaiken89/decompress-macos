@@ -199,49 +199,35 @@ struct ArchiveContentView: View {
 private struct ArchiveEntryRow: View {
   let entry: ArchiveEntry
   @Binding var isSelected: Bool
-  @State private var isHovered = false
 
   var body: some View {
-    HStack(spacing: DesignConstants.Spacing.sectionHeader) {
-      Toggle(isOn: $isSelected) {
-        HStack(spacing: DesignConstants.Spacing.relatedContent) {
-          Image(systemName: "doc")
-            .foregroundStyle(AppColors.acDocIcon)
-            .font(DesignConstants.Font.caption)
-            .accessibilityHidden(true)
+    Button {
+      isSelected.toggle()
+    } label: {
+      HStack(spacing: DesignConstants.Spacing.relatedContent) {
+        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+          .foregroundStyle(isSelected ? AppColors.acCheckIcon : AppColors.acDocIcon)
+          .font(DesignConstants.Font.body)
 
-          Text(entry.path)
-            .font(DesignConstants.Font.body)
-            .lineLimit(1)
+        Text(entry.path)
+          .font(DesignConstants.Font.body)
+          .lineLimit(1)
+
+        Spacer()
+
+        if entry.size > 0 {
+          Text(formattedSize(entry.size))
+            .font(DesignConstants.Font.caption)
+            .foregroundStyle(AppColors.acFileSize)
+            .monospacedDigit()
+            .fixedSize()
         }
       }
-      .toggleStyle(.checkbox)
-
-      Spacer()
-
-      if entry.size > 0 {
-        Text(formattedSize(entry.size))
-          .font(DesignConstants.Font.caption)
-          .foregroundStyle(AppColors.acFileSize)
-          .monospacedDigit()
-      }
+      .padding(.vertical, DesignConstants.Padding.verticalCompact)
+      .padding(.horizontal, DesignConstants.Padding.horizontalExtraTight)
+      .contentShape(Rectangle())
     }
-    .padding(.vertical, DesignConstants.Padding.verticalCompact)
-    .padding(.horizontal, DesignConstants.Padding.horizontalExtraTight)
-    .contentShape(Rectangle())
-    .background {
-      GeometryReader { geo in
-        Rectangle()
-          .fill(isHovered ? AppColors.frHoverBackground : AppColors.bgRow)
-          .clipShape(RoundedRectangle(cornerRadius: 4))
-          .onHover { hovering in
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-              isHovered = hovering
-            }
-          }
-      }
-    }
-    .onTapGesture { isSelected.toggle() }
+    .buttonStyle(SelectableRowButtonStyle(isSelected: isSelected))
   }
 
   private func formattedSize(_ size: Int64) -> String {

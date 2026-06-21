@@ -49,6 +49,8 @@ enum AppColors {
   static let acEmptyText = Color.secondary
   static let acDocIcon = Color.secondary
   static let acFileSize = Color.secondary
+  static let acSelectedBackground = Color.accentColor.opacity(0.15)
+  static let acCheckIcon = Color.accentColor
 
   // MARK: - Help View
   static let hvFormatIcon = Color.secondary

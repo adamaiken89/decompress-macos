@@ -129,10 +129,14 @@ struct DragDropView: View {
   private var selectedFilesSection: some View {
     VStack(alignment: .leading, spacing: DesignConstants.Spacing.relatedContent) {
       HStack {
-        Text(String(format: loc("Selected %d files"), viewModel.selectedURLs.count))
-          .font(DesignConstants.Font.body)
-          .foregroundStyle(AppColors.dzSubtitle)
-          .monospacedDigit()
+        Text(
+          String(
+            format: viewModel.selectedURLs.count == 1
+              ? loc("Selected %d file") : loc("Selected %d files"), viewModel.selectedURLs.count)
+        )
+        .font(DesignConstants.Font.body)
+        .foregroundStyle(AppColors.dzSubtitle)
+        .monospacedDigit()
 
         Spacer()
 
