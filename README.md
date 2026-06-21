@@ -1,7 +1,7 @@
 # Decompress
 
 <p align="center">
-  <img src="Sources/Decompress/Resources/logo.png" width="256" alt="Decompress logo">
+  <img src="Sources/Decompress/Resources/logo.webp" width="256" alt="Decompress logo">
 </p>
 
 <p align="center">
