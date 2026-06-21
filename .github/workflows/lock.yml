@@ -1,0 +1,52 @@
+# Lock Threads workflow
+# This workflow locks old issues and PRs
+
+name: Lock Threads
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  lock:
+    name: Lock Threads
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lock Threads
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const days = 90;
+            const label = 'stale';
+            
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed',
+              labels: label,
+              sort: 'updated',
+              direction: 'asc',
+              per_page: 100
+            });
+            
+            for (const issue of issues.data) {
+              const updated = new Date(issue.updated_at);
+              const now = new Date();
+              const diffDays = (now - updated) / (1000 * 60 * 60 * 24);
+              
+              if (diffDays > days) {
+                await github.rest.issues.lock({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  lock_reason: 'resolved'
+                });
+                console.log(`Locked issue #${issue.number}`);
+              }
+            }

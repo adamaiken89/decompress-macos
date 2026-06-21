@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability
+    url: https://github.com/[REPOOWNER]/[REPONAME]/security/policy
+    about: Please report security vulnerabilities through our security policy
+  - name: Documentation
+    url: https://github.com/[REPOOWNER]/[REPONAME]/blob/main/README.md
+    about: Check the README for common questions
+  - name: Contributing
+    url: https://github.com/[REPOOWNER]/[REPONAME]/blob/main/CONTRIBUTING.md
+    about: Read our contributing guidelines before submitting

@@ -1,0 +1,51 @@
+# Labels for pull requests
+# This file is used by the labeler action to automatically label PRs
+
+# Add 'bug' label to any file changes under src/
+bug:
+  - changed-files:
+      - any-glob-to-any-file:
+          - Sources/Decompress/**/*.swift
+
+# Add 'documentation' label to any file changes under docs/
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**
+          - *.md
+          - LICENSE
+          - CODE_OF_CONDUCT.md
+          - CONTRIBUTING.md
+          - SECURITY.md
+          - SUPPORT.md
+
+# Add 'tests' label to any file changes under tests/
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - Tests/**
+
+# Add 'ci' label to any changes in .github directory
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+
+# Add 'dependencies' label to any changes in Package.swift
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - Package.swift
+
+# Add 'swift' label to any Swift file changes
+swift:
+  - changed-files:
+      - any-glob-to-any-file:
+          - Sources/**/*.swift
+          - Tests/**/*.swift
+
+# Add 'makefile' label to any changes in Makefile
+makefile:
+  - changed-files:
+      - any-glob-to-any-file:
+          - Makefile

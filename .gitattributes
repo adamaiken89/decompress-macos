@@ -1,0 +1,41 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Swift source files
+*.swift text diff=swift
+
+# Documentation
+*.md text diff=markdown
+*.txt text
+
+# Scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Makefiles require tabs
+Makefile text eol=lf
+*.mk text eol=lf
+
+# Windows batch files
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.7z binary
+*.rar binary
+*.tar binary
+*.gz binary
+*.bz2 binary
+*.xz binary
+
+# Localization
+*.strings text
+*.stringsdict text
+*.lproj/* text

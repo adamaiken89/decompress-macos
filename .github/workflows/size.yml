@@ -1,0 +1,33 @@
+# Check PR Size workflow
+# This workflow checks PR size and adds labels
+
+name: Check PR Size
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-size:
+    name: Check PR Size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR size
+        uses: codelytv/pr-size-labeler@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          xs_max_size: 10
+          s_max_size: 100
+          m_max_size: 500
+          l_max_size: 1000
+          fail_if_xl: false
+          files_to_ignore: |
+            '*.md'
+            '*.txt'
+            '*.json'
+            '*.yml'
+            '*.yaml'

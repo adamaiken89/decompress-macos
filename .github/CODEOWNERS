@@ -1,0 +1,24 @@
+# Code Owners
+# This file defines code owners for the repository
+# Format: pattern @owner1 @owner2
+
+# Default owners for everything
+* @maintainers
+
+# Swift source code
+Sources/ @maintainers
+Tests/ @maintainers
+
+# Documentation
+docs/ @maintainers
+*.md @maintainers
+
+# CI/CD
+.github/ @maintainers
+
+# Build system
+Makefile @maintainers
+Package.swift @maintainers
+
+# Scripts
+scripts/ @maintainers

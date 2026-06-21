@@ -4,6 +4,13 @@
   <img src="Sources/Decompress/Resources/logo.png" width="256" alt="Decompress logo">
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Swift-6-blue?logo=swift&logoColor=white" alt="Swift 6">
+  <img src="https://img.shields.io/badge/macOS-15+-blue?logo=apple&logoColor=white" alt="macOS 15+">
+  <img src="https://img.shields.io/badge/CI-passing-brightgreen?logo=githubactions&logoColor=white" alt="CI">
+  <img src="https://img.shields.io/badge/License-MIT-blue" alt="MIT License">
+</p>
+
 A native macOS decompression tool built with SwiftUI — no ads, no subscriptions, just drag-and-drop extraction.
 
 ## Features
@@ -128,13 +135,23 @@ Sources/Decompress/
 ├── docs/
 │   ├── DEVELOPMENT_PLAN.md
 │   └── UI-UX-DESIGN-REVIEW.md
-├── .github/workflows/ci.yml
+├── .github/
+│   ├── workflows/ci.yml
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.md
+│   │   └── feature_request.md
+│   └── PULL_REQUEST_TEMPLATE.md
 ├── .githooks/
 │   ├── pre-commit
 │   └── pre-push
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── LICENSE
 ├── Makefile
 ├── Package.swift
-└── SPEC.md
+├── SECURITY.md
+├── SPEC.md
+└── SUPPORT.md
 ```
 
 ## CI
@@ -146,6 +163,18 @@ GitHub Actions runs on `macos-15`:
 3. `swift test --enable-code-coverage` + `llvm-cov` report
 4. On `v*` tags: release build + `.app` bundle + GitHub Release
 
+## Contributing
+
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) first.
+
+## Security
+
+To report security vulnerabilities, please see our [Security Policy](SECURITY.md).
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

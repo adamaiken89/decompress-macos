@@ -1,0 +1,8 @@
+# .mailmap - Git commit mapping
+# Format: Proper Name <email@address.com> <commit-name> <commit-email@address.com>
+# This file maps multiple commit identities to a single canonical identity.
+
+# Example:
+# John Doe <john@example.com> jd <jd@old-email.com>
+# Jane Smith <jane@example.com> jsmith <jane@old-domain.com>
+Adam Wan<adamaikenadam@gmail.com>
