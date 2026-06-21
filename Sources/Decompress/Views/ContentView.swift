@@ -13,7 +13,8 @@ struct ContentView: View {
         .transition(.scale.combined(with: .opacity))
     } else {
       fullContent
-        .frame(minWidth: 560, minHeight: 620)
+        .frame(
+          width: DesignConstants.Layout.windowWidth, height: DesignConstants.Layout.windowHeight)
     }
   }
 
@@ -44,25 +45,6 @@ struct ContentView: View {
     .padding(DesignConstants.Padding.horizontalTight)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .animation(.spring(response: 0.4, dampingFraction: 0.85), value: viewModel.extractionState)
-    .onChange(of: viewModel.extractionState) { _, newState in
-      if case .browsing = newState {
-        if let window = NSApp.mainWindow {
-          let newSize = NSSize(width: 1200, height: 1400)
-          if window.frame.size.width < newSize.width || window.frame.size.height < newSize.height {
-            window.setFrame(
-              NSRect(
-                x: window.frame.origin.x,
-                y: window.frame.origin.y - (newSize.height - window.frame.size.height),
-                width: newSize.width,
-                height: newSize.height
-              ),
-              display: true,
-              animate: true
-            )
-          }
-        }
-      }
-    }
     .onChange(of: viewModel.showHelp) { _, newValue in
       if newValue {
         openWindow(id: "help")

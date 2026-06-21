@@ -15,7 +15,7 @@ struct ArchiveContentView: View {
 
       if viewModel.isPasswordProtected {
         PasswordPromptView()
-          .frame(maxWidth: 340)
+          .frame(maxWidth: DesignConstants.Layout.passwordCardWidth)
       }
 
       actionButtons

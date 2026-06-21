@@ -30,7 +30,7 @@ struct ExtractionFailedView: View {
         .fixedSize(horizontal: false, vertical: true)
         .padding(DesignConstants.Padding.group)
         .cardBackground()
-        .frame(maxWidth: 420)
+        .frame(maxWidth: DesignConstants.Layout.failedCardMaxWidth)
 
       HStack(spacing: DesignConstants.Spacing.sectionGroup) {
         Button(loc("Try Again")) {

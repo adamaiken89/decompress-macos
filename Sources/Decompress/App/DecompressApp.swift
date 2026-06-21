@@ -11,9 +11,13 @@ struct DecompressApp: App {
       ContentView()
         .environment(viewModel)
         .windowVisualEffect()
-        .frame(minWidth: 360, minHeight: 260)
+        .frame(
+          width: DesignConstants.Layout.windowWidth, height: DesignConstants.Layout.windowHeight)
     }
-    .windowResizability(.contentMinSize)
+    .defaultSize(
+      width: DesignConstants.Layout.windowWidth, height: DesignConstants.Layout.windowHeight
+    )
+    .windowResizability(.contentSize)
     .commands {
       CommandGroup(after: .newItem) {
         Button(loc("Open...")) {
