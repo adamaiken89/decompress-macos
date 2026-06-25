@@ -26,6 +26,14 @@ fi
 cp "$1" "$APP_BINARY"
 chmod +x "$APP_BINARY"
 
+# Copy SPM resource bundle (Decompress_Decompress.bundle) so Bundle.module resolves.
+RESOURCE_BUNDLE="$(dirname "$1")/${PRODUCT_NAME}_${PRODUCT_NAME}.bundle"
+if [ -d "$RESOURCE_BUNDLE" ]; then
+    cp -R "$RESOURCE_BUNDLE" "$APP_DIR/Resources/"
+else
+    echo "  Warning: resource bundle not found at $RESOURCE_BUNDLE (localized strings may crash at launch)"
+fi
+
 # Info.plist
 if [ -f "$REPO_DIR/support/Info.plist" ]; then
     cp "$REPO_DIR/support/Info.plist" "$APP_PLIST"

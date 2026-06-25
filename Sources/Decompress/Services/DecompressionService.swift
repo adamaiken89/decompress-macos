@@ -178,7 +178,7 @@ extension DecompressionService {
     if let password, !password.isEmpty {
       args += ["-P", password]
     }
-    args += ["-o", source.path] + entries + ["-d", dest.path]
+    args += ["-o", source.path, "--"] + entries + ["-d", dest.path]
     process.arguments = args
     try await runProcess(process, progress: progress)
   }
@@ -263,7 +263,7 @@ extension DecompressionService {
     progress(0.2, loc("Extracting selected files..."))
     let process = Process()
     process.executableURL = toolURL
-    process.arguments = tarExtractArgs(for: format, source: source, dest: dest) + entries
+    process.arguments = tarExtractArgs(for: format, source: source, dest: dest) + ["--"] + entries
     try await runProcess(process, progress: progress)
   }
 
@@ -376,7 +376,7 @@ extension DecompressionService {
     if let password, !password.isEmpty {
       args += ["-p", password]
     }
-    args.append(source.path)
+    args += ["--", source.path]
     process.arguments = args
 
     try await runProcess(process, progress: progress)

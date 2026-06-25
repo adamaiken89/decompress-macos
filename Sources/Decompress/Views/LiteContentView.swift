@@ -38,11 +38,13 @@ struct LiteContentView: View {
 
   private func resizeWindowForLiteMode(center: Bool) {
     guard let window = NSApp.windows.first else { return }
-    window.minSize = NSSize(width: 200, height: 100)
+    let targetHeight = DesignConstants.Layout.liteWindowHeight
+    window.contentMinSize = NSSize(width: 200, height: targetHeight)
+    window.contentMaxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: targetHeight)
     window.layoutIfNeeded()
     if let contentView = window.contentView {
-      let size = contentView.fittingSize
-      window.setContentSize(size)
+      let width = max(contentView.fittingSize.width, targetHeight)
+      window.setContentSize(NSSize(width: width, height: targetHeight))
       if center {
         window.center()
       }
