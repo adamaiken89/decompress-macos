@@ -38,12 +38,9 @@ extension DecompressionService {
           if !stdout.isEmpty {
             Self.logger.error("stdout: \(stdout, privacy: .public)")
           }
-          let errorMsg = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+          let toolName = process.executableURL?.lastPathComponent ?? "unknown"
           continuation.resume(
-            throwing: ServiceError.processError(
-              errorMsg.isEmpty
-                ? String(format: loc("Exit code %d"), proc.terminationStatus) : errorMsg
-            )
+            throwing: ServiceError.processExit(toolName, proc.terminationStatus)
           )
         }
       }
@@ -85,10 +82,9 @@ extension DecompressionService {
           if !stderr.isEmpty {
             Self.logger.error("stderr: \(stderr, privacy: .public)")
           }
+          let toolName = process.executableURL?.lastPathComponent ?? "unknown"
           continuation.resume(
-            throwing: ServiceError.processError(
-              stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-            )
+            throwing: ServiceError.processExit(toolName, proc.terminationStatus)
           )
         }
       }

@@ -53,6 +53,7 @@ enum DesignConstants {
     static let progressCardMaxWidth: CGFloat = 600
     static let failedCardMaxWidth: CGFloat = 640
     static let spinnerScale: CGFloat = 1.1
+    static let liteWindowHeight: CGFloat = 200
   }
 
   enum Font {
