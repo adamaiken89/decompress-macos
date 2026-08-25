@@ -16,9 +16,9 @@ struct PasswordPromptView: View {
 
         Group {
           if showPassword {
-            TextField(loc("Enter password"), text: Bindable(viewModel).password)
+            TextField(loc("Enter password"), text: Bindable(viewModel).password.value)
           } else {
-            SecureField(loc("Enter password"), text: Bindable(viewModel).password)
+            SecureField(loc("Enter password"), text: Bindable(viewModel).password.value)
           }
         }
         .textFieldStyle(.roundedBorder)
@@ -39,7 +39,7 @@ struct PasswordPromptView: View {
         .accessibilityLabel(showPassword ? loc("Hide password") : loc("Show password"))
       }
 
-      if let error = viewModel.passwordError {
+      if let error = viewModel.password.error {
         HStack(spacing: DesignConstants.Spacing.relatedContent) {
           Image(systemName: "exclamationmark.triangle.fill")
             .font(DesignConstants.Font.caption)

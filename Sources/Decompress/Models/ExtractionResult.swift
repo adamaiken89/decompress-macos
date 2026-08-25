@@ -40,11 +40,24 @@ struct BatchResult: Sendable, Equatable {
   }
 }
 
-enum ExtractionState: Sendable, Equatable {
+enum ExtractionPhase: Sendable, Equatable {
   case idle
-  case preparing
-  case extracting(progress: Double, currentFile: String, archiveIndex: Int, totalArchives: Int)
+  case extracting(
+    progress: Double?, currentFile: String?, archiveIndex: Int, totalArchives: Int)
   case browsing
   case completed(BatchResult)
   case failed(String)
+
+  static func preparing(totalArchives: Int) -> ExtractionPhase {
+    .extracting(progress: nil, currentFile: nil, archiveIndex: 0, totalArchives: totalArchives)
+  }
+}
+
+extension ExtractionPhase {
+  var isBusy: Bool {
+    if case .extracting = self { return true }
+    return false
+  }
+
+  var canCancel: Bool { isBusy }
 }

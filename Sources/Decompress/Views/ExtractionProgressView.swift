@@ -9,7 +9,7 @@ struct ExtractionProgressView: View {
     VStack(spacing: DesignConstants.Spacing.pageWide) {
       Spacer()
 
-      if case .preparing = viewModel.extractionState {
+      if case .extracting(.none, _, _, _) = viewModel.phase {
         VStack(spacing: DesignConstants.Spacing.pageSection) {
           ProgressView()
             .scaleEffect(1.2)
@@ -21,7 +21,8 @@ struct ExtractionProgressView: View {
       }
 
       if case .extracting(let progress, let currentFile, let archiveIndex, let totalArchives) =
-        viewModel.extractionState
+        viewModel.phase,
+        let progress, let currentFile
       {
         VStack(spacing: DesignConstants.Spacing.progressContent) {
           Text(loc("Extracting..."))

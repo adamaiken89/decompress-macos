@@ -18,12 +18,12 @@ struct ContentView: View {
 
   private var fullContent: some View {
     VStack(spacing: DesignConstants.Spacing.zero) {
-      switch viewModel.extractionState {
+      switch viewModel.phase {
       case .idle:
         DragDropView()
           .transition(.move(edge: .bottom).combined(with: .opacity))
 
-      case .preparing, .extracting:
+      case .extracting:
         ExtractionProgressView()
           .transition(.scale.combined(with: .opacity))
 
@@ -42,7 +42,7 @@ struct ContentView: View {
     }
     .padding(DesignConstants.Padding.horizontalTight)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: viewModel.extractionState)
+    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: viewModel.phase)
     .onChange(of: viewModel.showHelp) { _, newValue in
       if newValue {
         openWindow(id: "help")

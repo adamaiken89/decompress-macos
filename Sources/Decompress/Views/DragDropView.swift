@@ -5,7 +5,6 @@ struct DragDropView: View {
   @Environment(DecompressViewModel.self)
   private var viewModel
   @State private var isTargeted = false
-  @State private var detectedFormats: [URL: ArchiveFormat] = [:]
 
   var body: some View {
     VStack(spacing: DesignConstants.Spacing.zero) {
@@ -153,7 +152,7 @@ struct DragDropView: View {
           ForEach(Array(viewModel.selectedURLs.enumerated()), id: \.element) { index, url in
             FileRowView(
               url: url,
-              format: detectedFormats[url],
+              format: viewModel.detectedFormats[url],
               onRemove: { viewModel.removeFile(at: index) },
               onDoubleClick: { viewModel.extractAll() },
               onPreview: { viewModel.previewArchives() }
@@ -167,7 +166,7 @@ struct DragDropView: View {
 
   private var bottomControls: some View {
     VStack(spacing: DesignConstants.Spacing.sectionGroup) {
-      if viewModel.isPasswordProtected {
+      if viewModel.password.isProtected {
         PasswordPromptView()
       }
 
@@ -224,9 +223,8 @@ struct DragDropView: View {
 
   private func handleFilePicker(_ result: Result<[URL], any Error>) {
     guard case .success(let urls) = result else { return }
-    detectedFormats = [:]
     for url in urls {
-      detectedFormats[url] = viewModel.detectFormat(for: url)
+      viewModel.detectFormat(for: url)
     }
     viewModel.addFiles(urls)
     viewModel.checkForEncryptedArchives(urls)
@@ -239,7 +237,7 @@ struct DragDropView: View {
           let url = URL(dataRepresentation: data, relativeTo: nil)
         else { return }
         Task { @MainActor in
-          detectedFormats[url] = viewModel.detectFormat(for: url)
+          viewModel.detectFormat(for: url)
           viewModel.addFiles([url])
           viewModel.checkForEncryptedArchives([url])
         }

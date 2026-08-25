@@ -20,14 +20,14 @@ struct SettingsView: View {
       Section {
         Toggle(
           loc("Extract to source directory by default"),
-          isOn: Bindable(viewModel).autoExtractToSourceDir
+          isOn: Bindable(viewModel).settings.autoExtractToSourceDir
         )
         .help(
           loc("When enabled, archives are extracted into the same folder as the archive source"))
 
         Toggle(
           loc("Move archive to Trash after extraction"),
-          isOn: Bindable(viewModel).deleteArchiveAfterExtraction
+          isOn: Bindable(viewModel).settings.deleteArchiveAfterExtraction
         )
         .help(loc("Archives will be moved to Trash after successful extraction"))
       }
@@ -41,7 +41,7 @@ struct SettingsView: View {
               Spacer()
             }
 
-            if viewModel.autoExtractToSourceDir {
+            if viewModel.settings.autoExtractToSourceDir {
               HStack {
                 Image(systemName: "folder")
                   .foregroundStyle(AppColors.stFolderIcon)
@@ -55,7 +55,7 @@ struct SettingsView: View {
                 Image(systemName: "folder")
                   .foregroundStyle(AppColors.stFolderIcon)
                   .font(DesignConstants.Font.subheadline)
-                Text(viewModel.outputDirectoryURL?.path ?? loc("Not set"))
+                Text(viewModel.settings.outputDirectoryURL?.path ?? loc("Not set"))
                   .font(DesignConstants.Font.body)
                   .foregroundStyle(AppColors.stFolderLabel)
                   .lineLimit(1)
@@ -63,7 +63,7 @@ struct SettingsView: View {
               }
             }
 
-            if !viewModel.autoExtractToSourceDir {
+            if !viewModel.settings.autoExtractToSourceDir {
               Button(loc("Choose...")) {
                 let panel = NSOpenPanel()
                 panel.canChooseFiles = false
@@ -72,14 +72,14 @@ struct SettingsView: View {
                 panel.message = loc("Select default extraction directory")
                 panel.begin { response in
                   if response == .OK {
-                    viewModel.outputDirectoryURL = panel.url
+                    viewModel.settings.outputDirectoryURL = panel.url
                   }
                 }
               }
               .secondaryButton()
             }
 
-            if viewModel.autoExtractToSourceDir {
+            if viewModel.settings.autoExtractToSourceDir {
               Text(loc("Turn off \"Extract to source directory\" to choose a custom location."))
                 .font(DesignConstants.Font.subheadline)
                 .foregroundStyle(AppColors.stHint)
@@ -89,7 +89,7 @@ struct SettingsView: View {
         }
         .cardBackground()
       }
-      .disabled(viewModel.autoExtractToSourceDir)
+      .disabled(viewModel.settings.autoExtractToSourceDir)
     }
     .padding(DesignConstants.Padding.settingsTab)
   }

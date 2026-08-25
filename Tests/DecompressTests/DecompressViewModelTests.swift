@@ -18,10 +18,10 @@ final class DecompressViewModelTests: XCTestCase {
     XCTAssertTrue(viewModel.selectedURLs.isEmpty)
     XCTAssertFalse(viewModel.showFilePicker)
     XCTAssertFalse(viewModel.showHelp)
-    XCTAssertTrue(viewModel.autoExtractToSourceDir)
-    XCTAssertFalse(viewModel.deleteArchiveAfterExtraction)
-    XCTAssertFalse(viewModel.isPasswordProtected)
-    XCTAssertTrue(viewModel.password.isEmpty)
+    XCTAssertTrue(viewModel.settings.autoExtractToSourceDir)
+    XCTAssertFalse(viewModel.settings.deleteArchiveAfterExtraction)
+    XCTAssertFalse(viewModel.password.isProtected)
+    XCTAssertTrue(viewModel.password.value.isEmpty)
     XCTAssertFalse(viewModel.extractInPlace)
   }
 
@@ -88,8 +88,8 @@ final class DecompressViewModelTests: XCTestCase {
     viewModel.addFiles([URL(fileURLWithPath: "/tmp/a.zip")])
     viewModel.removeFile(at: 0)
     XCTAssertTrue(viewModel.isIdle)
-    XCTAssertTrue(viewModel.password.isEmpty)
-    XCTAssertFalse(viewModel.isPasswordProtected)
+    XCTAssertTrue(viewModel.password.value.isEmpty)
+    XCTAssertFalse(viewModel.password.isProtected)
   }
 
   func testRemoveFileOutOfBoundsDoesNothing() {
@@ -109,13 +109,12 @@ final class DecompressViewModelTests: XCTestCase {
       URL(fileURLWithPath: "/tmp/a.zip"),
       URL(fileURLWithPath: "/tmp/b.zip"),
     ])
-    viewModel.password = "secret"
-    viewModel.isPasswordProtected = true
+    viewModel.password = PasswordState(isProtected: true, value: "secret")
     viewModel.clearFiles()
     XCTAssertTrue(viewModel.selectedURLs.isEmpty)
     XCTAssertTrue(viewModel.isIdle)
-    XCTAssertTrue(viewModel.password.isEmpty)
-    XCTAssertFalse(viewModel.isPasswordProtected)
+    XCTAssertTrue(viewModel.password.value.isEmpty)
+    XCTAssertFalse(viewModel.password.isProtected)
   }
 
   func testClearFilesOnEmptySelectionDoesNotCrash() {
@@ -160,7 +159,7 @@ final class DecompressViewModelTests: XCTestCase {
 
   func testCheckForEncryptedArchivesOnNonexistentFile() {
     viewModel.checkForEncryptedArchives([URL(fileURLWithPath: "/tmp/nonexistent.zip")])
-    XCTAssertFalse(viewModel.isPasswordProtected)
+    XCTAssertFalse(viewModel.password.isProtected)
   }
 
   func testIsBusyOnlyDuringActiveExtraction() {
@@ -186,11 +185,11 @@ final class DecompressViewModelTests: XCTestCase {
   }
 
   func testAutoExtractToSourceDirDefaultIsTrue() {
-    XCTAssertTrue(viewModel.autoExtractToSourceDir)
+    XCTAssertTrue(viewModel.settings.autoExtractToSourceDir)
   }
 
   func testDeleteArchiveAfterExtractionDefaultIsFalse() {
-    XCTAssertFalse(viewModel.deleteArchiveAfterExtraction)
+    XCTAssertFalse(viewModel.settings.deleteArchiveAfterExtraction)
   }
 
   func testExtractInPlaceDefaultIsFalse() {

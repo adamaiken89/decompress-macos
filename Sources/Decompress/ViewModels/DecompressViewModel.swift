@@ -13,25 +13,25 @@ enum LaunchMode {
 final class DecompressViewModel {
   static let shared = DecompressViewModel()
 
-  var extractionState: ExtractionState = .idle
-  var selectedURLs: [URL] = []
-  var outputDirectoryURL: URL?
+  private(set) var phase: ExtractionPhase = .idle
+  private(set) var batch = BatchSession()
+  private(set) var queue = ExtractionQueue()
+  var password = PasswordState()
+  var settings = AppSettings.load() {
+    didSet { settings.save() }
+  }
+  var launchMode: LaunchMode = .standard
+  var extractInPlace = false
   var showFilePicker = false
   var showHelp = false
-  var autoExtractToSourceDir = true
-  var deleteArchiveAfterExtraction = false
-  var isPasswordProtected = false
-  var password = ""
-  var passwordError: String?
-  var extractInPlace = false
-  var extractionStartTime: Date?
-  var lastFailedSourceURL: URL?
-  var lastBatchResult: BatchResult?
-  var archiveContents: [ArchiveContent] = []
-  var pendingQueue: [[URL]] = []
-  var launchMode: LaunchMode = .standard
 
-  var queueCount: Int { pendingQueue.count }
+  var selectedURLs: [URL] { batch.urls }
+  var archiveContents: [ArchiveContent] { batch.contents }
+  var detectedFormats: [URL: ArchiveFormat] { batch.formats }
+  var lastBatchResult: BatchResult? { batch.lastResult }
+  var lastFailedSourceURL: URL? { batch.lastFailedSourceURL }
+  var extractionStartTime: Date? { batch.extractionStartTime }
+  var queueCount: Int { queue.count }
 
   let service: DecompressionService
   private var extractionTask: Task<Void, Never>?
@@ -41,29 +41,12 @@ final class DecompressViewModel {
   }
 
   var isIdle: Bool {
-    if case .idle = extractionState { return true }
+    if case .idle = phase { return true }
     return false
   }
 
-  var isBusy: Bool {
-    switch extractionState {
-    case .preparing, .extracting:
-      true
-
-    case .idle, .browsing, .completed, .failed:
-      false
-    }
-  }
-
-  var canCancel: Bool {
-    switch extractionState {
-    case .preparing, .extracting:
-      true
-
-    case .idle, .browsing, .completed, .failed:
-      false
-    }
-  }
+  var isBusy: Bool { phase.isBusy }
+  var canCancel: Bool { phase.canCancel }
 
   func cancelExtraction() {
     extractionTask?.cancel()
@@ -71,61 +54,46 @@ final class DecompressViewModel {
     Task {
       await service.cancelRunningProcesses()
     }
-    extractionState = .idle
-    extractionStartTime = nil
+    phase = .idle
+    batch.clearStartTime()
     processNextInQueue()
   }
 
   func addFiles(_ urls: [URL]) {
-    let archiveURLs = urls.filter { url in
-      ArchiveFormatDetector.detectFormat(from: url) != nil
-    }
-
-    let filtered = archiveURLs.filter { url in
-      guard let info = ArchiveFormatDetector.splitPartInfo(for: url), info.partNumber > 1 else {
-        return true
-      }
-      let allCandidateURLs = selectedURLs + archiveURLs
-      return !allCandidateURLs.contains { candidate in
-        guard candidate != url,
-          let candidateInfo = ArchiveFormatDetector.splitPartInfo(for: candidate)
-        else {
-          return false
-        }
-        return candidateInfo.groupKey == info.groupKey && candidateInfo.partNumber == 1
-      }
-    }
-
-    selectedURLs.append(contentsOf: filtered)
+    batch.add(urls)
   }
 
+  @discardableResult
   func detectFormat(for url: URL) -> ArchiveFormat? {
-    service.detectFormat(from: url)
+    let format = service.detectFormat(from: url)
+    if let format {
+      batch.record(format: format, for: url)
+    }
+    return format
   }
 
   func checkForEncryptedArchives(_ urls: [URL]) {
     for url in urls {
       guard let format = ArchiveFormatDetector.detectFormat(from: url) else { continue }
       if ArchiveFormatDetector.isEncrypted(url: url, format: format) == true {
-        isPasswordProtected = true
+        password.isProtected = true
         return
       }
     }
   }
 
   func previewArchives() {
-    guard !selectedURLs.isEmpty else { return }
+    guard !batch.isEmpty else { return }
 
     extractionTask?.cancel()
 
-    let urls = selectedURLs
-    extractionState = .preparing
+    let urls = batch.urls
+    phase = .preparing(totalArchives: urls.count)
     extractionTask = Task {
       var contents: [ArchiveContent] = []
       for url in urls {
         if Task.isCancelled { break }
-        let format = service.detectFormat(from: url)
-        guard let format else {
+        guard let format = service.detectFormat(from: url) else {
           contents.append(
             ArchiveContent(
               sourceURL: url,
@@ -154,12 +122,12 @@ final class DecompressViewModel {
         }
       }
       if Task.isCancelled {
-        extractionState = .idle
+        phase = .idle
         extractionTask = nil
         return
       }
-      archiveContents = contents
-      extractionState = .browsing
+      batch.setContents(contents)
+      phase = .browsing
       extractionTask = nil
     }
   }
@@ -167,8 +135,8 @@ final class DecompressViewModel {
   func backToFiles() {
     extractionTask?.cancel()
     extractionTask = nil
-    extractionState = .idle
-    archiveContents = []
+    phase = .idle
+    batch.clearContents()
   }
 
   func extractAll(selectedEntries: [URL: Set<String>]? = nil) {
@@ -177,28 +145,27 @@ final class DecompressViewModel {
 
   func retryFailures() {
     guard let result = lastBatchResult, !result.failures.isEmpty else { return }
-    let urls = result.failures.map(\.sourceURL)
-    if result.hasPasswordFailuresOnly, isPasswordProtected, password.isEmpty { return }
-    startExtraction(urls: urls, selectedEntries: nil)
+    if result.hasPasswordFailuresOnly, password.isProtected, password.value.isEmpty { return }
+    startExtraction(urls: result.failures.map(\.sourceURL), selectedEntries: nil)
   }
 
   private func startExtraction(urls: [URL], selectedEntries: [URL: Set<String>]?) {
     guard !urls.isEmpty else { return }
 
     let useExtractInPlace = extractInPlace
-    let useAutoDir = autoExtractToSourceDir
-    let useOutputDir = outputDirectoryURL
-    let usePassword = isPasswordProtected && !password.isEmpty ? password : nil
-    let shouldTrash = deleteArchiveAfterExtraction
+    let useAutoDir = settings.autoExtractToSourceDir
+    let useOutputDir = settings.outputDirectoryURL
+    let usePassword = password.effectivePassword()
+    let shouldTrash = settings.deleteArchiveAfterExtraction
     let useSelectedEntries = selectedEntries
 
-    passwordError = nil
-    extractionStartTime = Date()
-    extractionState = .preparing
+    password.error = nil
+    batch.markStarted()
+    phase = .preparing(totalArchives: urls.count)
     extractionTask = Task {
       try? await Task.sleep(for: .seconds(0.5))
       if Task.isCancelled {
-        extractionState = .idle
+        phase = .idle
         extractionTask = nil
         return
       }
@@ -229,12 +196,9 @@ final class DecompressViewModel {
 
   func openFiles(_ urls: [URL]) {
     launchMode = .fileOpen
-    switch extractionState {
-    case .preparing, .extracting:
-      pendingQueue.append(urls)
+    if phase.isBusy {
+      queue.enqueue(urls)
       return
-    default:
-      break
     }
     beginProcessing(urls)
   }
@@ -245,31 +209,29 @@ final class DecompressViewModel {
     clearFiles()
     addFiles(urls)
     checkForEncryptedArchives(urls)
-    if !isPasswordProtected {
+    if !password.isProtected {
       extractAll()
     }
   }
 
   private func processNextInQueue() {
-    guard !pendingQueue.isEmpty else { return }
-    let next = pendingQueue.removeFirst()
+    guard let next = queue.popNext() else { return }
     beginProcessing(next)
   }
 
   private func handleExtractionCompletion(_ result: BatchResult) {
     extractionTask = nil
-    lastBatchResult = result
+    batch.recordResult(result)
 
-    if !pendingQueue.isEmpty {
+    if !queue.isEmpty {
       processNextInQueue()
       return
     }
 
     if result.hasPasswordFailuresOnly {
-      isPasswordProtected = true
-      password = ""
-      passwordError = loc("Incorrect password. Try again.")
-      extractionState = .idle
+      password = PasswordState(
+        isProtected: true, value: "", error: loc("Incorrect password. Try again."))
+      phase = .idle
       return
     }
 
@@ -287,44 +249,34 @@ final class DecompressViewModel {
         NSApplication.shared.terminate(nil)
       }
     } else {
-      extractionState = .completed(result)
+      phase = .completed(result)
     }
   }
 
   func clearQueue() {
-    pendingQueue.removeAll()
+    queue.removeAll()
   }
 
   func reset() {
     launchMode = .standard
-    extractionState = .idle
-    extractionStartTime = nil
-    archiveContents = []
+    phase = .idle
+    batch.clearContents()
+    batch.clearStartTime()
   }
 
   func removeFile(at index: Int) {
-    guard index >= 0, index < selectedURLs.count else { return }
-    selectedURLs.remove(at: index)
-    if selectedURLs.isEmpty {
-      extractionState = .idle
-      password = ""
-      passwordError = nil
-      isPasswordProtected = false
-      archiveContents = []
-      lastBatchResult = nil
+    let becameEmpty = batch.remove(at: index)
+    if becameEmpty {
+      phase = .idle
+      batch.reset()
+      password.clear()
     }
   }
 
   func clearFiles() {
-    selectedURLs.removeAll()
-    extractionState = .idle
-    password = ""
-    passwordError = nil
-    isPasswordProtected = false
-    extractionStartTime = nil
-    lastFailedSourceURL = nil
-    lastBatchResult = nil
-    archiveContents = []
+    phase = .idle
+    batch.reset()
+    password.clear()
   }
 }
 
@@ -400,7 +352,6 @@ extension DecompressViewModel {
       }
     }
 
-    lastFailedSourceURL = failures.last?.sourceURL
     return BatchResult(successes: successes, failures: failures)
   }
 
@@ -410,7 +361,7 @@ extension DecompressViewModel {
   ) -> @Sendable (Double, String) -> Void {
     { [weak self] progress, file in
       Task { @MainActor in
-        self?.extractionState = .extracting(
+        self?.phase = .extracting(
           progress: progress,
           currentFile: file,
           archiveIndex: index,

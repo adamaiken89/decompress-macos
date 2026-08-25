@@ -13,7 +13,7 @@ struct ArchiveContentView: View {
       archiveList
         .frame(maxHeight: .infinity)
 
-      if viewModel.isPasswordProtected {
+      if viewModel.password.isProtected {
         PasswordPromptView()
       }
 

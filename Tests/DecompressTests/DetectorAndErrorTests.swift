@@ -202,10 +202,83 @@ final class DetectorAndErrorTests: XCTestCase {
   }
 
   @MainActor
-  func testClearFilesResetsPasswordError() {
+  func testClearFilesResetsPasswordGate() throws {
     let viewModel = DecompressViewModel()
-    viewModel.passwordError = "Incorrect password"
+    var header = Data([0x50, 0x4B, 0x03, 0x04])
+    header.append(contentsOf: [0x14, 0x00, 0x01, 0x00])
+    header.append(Data(repeating: 0, count: 22))
+    let url = try makeTempFile(name: "enc.zip", contents: header)
+    defer { cleanup([url]) }
+
+    viewModel.checkForEncryptedArchives([url])
+    XCTAssertTrue(viewModel.password.isProtected)
+
     viewModel.clearFiles()
-    XCTAssertNil(viewModel.passwordError)
+    XCTAssertFalse(viewModel.password.isProtected)
+    XCTAssertNil(viewModel.password.error)
+  }
+}
+
+// MARK: - State slices
+
+final class StateSliceTests: XCTestCase {
+  private func makeDefaults() -> UserDefaults {
+    let suiteName = "decompress-tests-\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suiteName)!
+    defaults.removePersistentDomain(forName: suiteName)
+    return defaults
+  }
+
+  func testAppSettingsRoundTrip() {
+    let defaults = makeDefaults()
+    var settings = AppSettings()
+    settings.autoExtractToSourceDir = false
+    settings.deleteArchiveAfterExtraction = true
+    settings.outputDirectoryURL = URL(fileURLWithPath: "/tmp/out")
+
+    settings.save(defaults: defaults)
+    let loaded = AppSettings.load(defaults: defaults)
+
+    XCTAssertEqual(loaded, settings)
+  }
+
+  func testAppSettingsLoadWithNoDataGivesDefaults() {
+    let loaded = AppSettings.load(defaults: makeDefaults())
+    XCTAssertEqual(loaded, AppSettings())
+  }
+
+  @MainActor
+  func testQueuePopNextOrder() {
+    let viewModel = DecompressViewModel()
+    XCTAssertTrue(viewModel.queue.isEmpty)
+
+    viewModel.openFiles([URL(fileURLWithPath: "/tmp/a.zip")])
+    viewModel.clearQueue()
+    XCTAssertTrue(viewModel.queue.isEmpty)
+  }
+
+  @MainActor
+  func testRemoveLastFileResetsSession() {
+    let viewModel = DecompressViewModel()
+    viewModel.addFiles([URL(fileURLWithPath: "/tmp/real.zip")])
+    viewModel.password = PasswordState(isProtected: true, value: "x", error: "bad")
+
+    viewModel.removeFile(at: 0)
+
+    XCTAssertTrue(viewModel.selectedURLs.isEmpty)
+    XCTAssertFalse(viewModel.password.isProtected)
+    XCTAssertNil(viewModel.password.error)
+    XCTAssertTrue(viewModel.isIdle)
+  }
+
+  @MainActor
+  func testDetectFormatRecordsInSession() {
+    let viewModel = DecompressViewModel()
+    let url = URL(fileURLWithPath: "/tmp/movie.zip")
+
+    let format = viewModel.detectFormat(for: url)
+
+    XCTAssertEqual(format, .zip)
+    XCTAssertEqual(viewModel.detectedFormats[url], .zip)
   }
 }

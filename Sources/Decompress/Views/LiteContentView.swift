@@ -6,18 +6,15 @@ struct LiteContentView: View {
 
   var body: some View {
     VStack(spacing: DesignConstants.Spacing.zero) {
-      switch viewModel.extractionState {
+      switch viewModel.phase {
       case .idle:
-        if viewModel.isPasswordProtected {
+        if viewModel.password.isProtected {
           litePasswordView
         } else {
           litePreparingView
         }
 
-      case .preparing, .extracting:
-        liteProgressView
-
-      case .browsing:
+      case .extracting, .browsing:
         liteProgressView
 
       case .completed(let batchResult):
@@ -31,7 +28,7 @@ struct LiteContentView: View {
     .onAppear {
       resizeWindowForLiteMode(center: true)
     }
-    .onChange(of: viewModel.extractionState) { _, _ in
+    .onChange(of: viewModel.phase) { _, _ in
       resizeWindowForLiteMode(center: false)
     }
   }
@@ -71,7 +68,7 @@ struct LiteContentView: View {
       HStack(spacing: 8) {
         Image(systemName: "key.fill")
           .foregroundStyle(AppColors.ppKeyIcon)
-        SecureField(loc("Enter password"), text: Bindable(viewModel).password)
+        SecureField(loc("Enter password"), text: Bindable(viewModel).password.value)
           .textFieldStyle(.roundedBorder)
           .labelsHidden()
       }
@@ -79,7 +76,7 @@ struct LiteContentView: View {
       .cardBackground()
       .frame(width: DesignConstants.Layout.passwordCardWidth)
 
-      if let error = viewModel.passwordError {
+      if let error = viewModel.password.error {
         Text(error)
           .font(DesignConstants.Font.caption)
           .foregroundStyle(AppColors.efMessage)
@@ -91,7 +88,7 @@ struct LiteContentView: View {
       }
       .primaryButton()
       .keyboardShortcut(.return)
-      .disabled(viewModel.password.isEmpty)
+      .disabled(viewModel.password.value.isEmpty)
     }
   }
 
@@ -107,7 +104,9 @@ struct LiteContentView: View {
 
   private var liteProgressView: some View {
     VStack(spacing: 10) {
-      if case .extracting(let progress, let currentFile, _, _) = viewModel.extractionState {
+      if case .extracting(let progress, let currentFile, _, _) = viewModel.phase,
+        let progress, let currentFile
+      {
         VStack(spacing: 10) {
           Text(loc("Extracting..."))
             .font(DesignConstants.Font.subheadline)
