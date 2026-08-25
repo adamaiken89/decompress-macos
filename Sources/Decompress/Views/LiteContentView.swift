@@ -79,6 +79,13 @@ struct LiteContentView: View {
       .cardBackground()
       .frame(width: DesignConstants.Layout.passwordCardWidth)
 
+      if let error = viewModel.passwordError {
+        Text(error)
+          .font(DesignConstants.Font.caption)
+          .foregroundStyle(AppColors.efMessage)
+          .multilineTextAlignment(.center)
+      }
+
       Button(loc("Extract All")) {
         viewModel.extractAll()
       }
@@ -153,11 +160,12 @@ struct LiteContentView: View {
             .frame(maxWidth: DesignConstants.Layout.messageMaxWidth)
         }
 
-        Button(loc("Retry")) {
-          viewModel.reset()
+        Button(loc("Retry Failed")) {
+          viewModel.retryFailures()
         }
         .primaryButton()
         .keyboardShortcut(.return)
+        .disabled(viewModel.lastBatchResult?.failures.isEmpty ?? true)
       }
     }
   }

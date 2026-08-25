@@ -34,12 +34,17 @@ actor DecompressionService {
     return nil
   }
 
+  func cancelRunningProcesses() {
+    _ = RunningProcessTracker.shared.terminateAll()
+  }
+
   func extract(
     sourceURL: URL,
     destinationURL: URL,
     format: ArchiveFormat,
     password: String? = nil,
     selectedEntries: [String]? = nil,
+    allowNonEmptyDestination: Bool = false,
     progressHandler: @Sendable @escaping (Double, String) -> Void
   ) async throws -> ExtractionResult {
     Self.logger.debug(
@@ -49,6 +54,14 @@ actor DecompressionService {
     guard FileManager.default.fileExists(atPath: sourceURL.path) else {
       Self.logger.error("File not found: \(sourceURL.path, privacy: .public)")
       throw ServiceError.fileNotFound(sourceURL)
+    }
+
+    if !allowNonEmptyDestination,
+      FileManager.default.fileExists(atPath: destinationURL.path),
+      let existing = try? FileManager.default.contentsOfDirectory(atPath: destinationURL.path),
+      !existing.isEmpty
+    {
+      throw ServiceError.destinationNotEmpty(destinationURL)
     }
 
     try FileManager.default.createDirectory(
@@ -142,7 +155,7 @@ extension DecompressionService {
     let process = Process()
     process.executableURL = toolURL
     process.arguments = ["-x", "-k", source.path, dest.path]
-    try await runProcess(process, progress: progress)
+    try await runProcess(process, sourceURL: source, progress: progress)
   }
 
   private func extractZipWithPassword(
@@ -155,10 +168,14 @@ extension DecompressionService {
       throw ServiceError.toolNotFound("unzip")
     }
     progress(0.2, loc("Extracting encrypted ZIP..."))
-    let process = Process()
-    process.executableURL = toolURL
-    process.arguments = ["-P", password, "-o", source.path, "-d", dest.path]
-    try await runProcess(process, progress: progress)
+    try await runProcessWithPassword(
+      toolURL: toolURL,
+      arguments: ["-o", source.path, "-d", dest.path],
+      password: password,
+      sourceURL: source,
+      totalUnits: nil,
+      progress: progress
+    )
   }
 
   private func extractZipSelected(
@@ -172,15 +189,23 @@ extension DecompressionService {
       throw ServiceError.toolNotFound("unzip")
     }
     progress(0.2, loc("Extracting selected files..."))
-    let process = Process()
-    process.executableURL = toolURL
-    var args: [String] = []
+
     if let password, !password.isEmpty {
-      args += ["-P", password]
+      try await runProcessWithPassword(
+        toolURL: toolURL,
+        arguments: ["-o", source.path, "--"] + entries + ["-d", dest.path],
+        password: password,
+        sourceURL: source,
+        totalUnits: entries.count,
+        progress: progress
+      )
+    } else {
+      let process = Process()
+      process.executableURL = toolURL
+      process.arguments = ["-o", source.path, "--"] + entries + ["-d", dest.path]
+      try await runProcess(
+        process, sourceURL: source, totalUnits: entries.count, progress: progress)
     }
-    args += ["-o", source.path, "--"] + entries + ["-d", dest.path]
-    process.arguments = args
-    try await runProcess(process, progress: progress)
   }
 }
 
@@ -247,7 +272,7 @@ extension DecompressionService {
     let process = Process()
     process.executableURL = toolURL
     process.arguments = tarExtractArgs(for: format, source: source, dest: dest)
-    try await runProcess(process, progress: progress)
+    try await runProcess(process, sourceURL: source, progress: progress)
   }
 
   private func extractTarSelected(
@@ -264,22 +289,23 @@ extension DecompressionService {
     let process = Process()
     process.executableURL = toolURL
     process.arguments = tarExtractArgs(for: format, source: source, dest: dest) + ["--"] + entries
-    try await runProcess(process, progress: progress)
+    try await runProcess(
+      process, sourceURL: source, totalUnits: entries.count, progress: progress)
   }
 
   private func tarExtractArgs(for format: ArchiveFormat, source: URL, dest: URL) -> [String] {
     switch format {
     case .tarGz:
-      ["-xzf", source.path, "-C", dest.path]
+      ["-xvzf", source.path, "-C", dest.path]
 
     case .tarBz2:
-      ["-xjf", source.path, "-C", dest.path]
+      ["-xvjf", source.path, "-C", dest.path]
 
     case .tarXz:
-      ["-xJf", source.path, "-C", dest.path]
+      ["-xvJf", source.path, "-C", dest.path]
 
     default:
-      ["-xf", source.path, "-C", dest.path]
+      ["-xvf", source.path, "-C", dest.path]
     }
   }
 }
@@ -299,7 +325,7 @@ extension DecompressionService {
     let process = Process()
     process.executableURL = toolURL
     process.arguments = args
-    try await runProcess(process, progress: { _, _ in })
+    try await runProcess(process, sourceURL: source, progress: { _, _ in })
   }
 }
 
@@ -337,18 +363,20 @@ extension DecompressionService {
     progress(0.2, loc("Extracting..."))
     Self.logger.debug("Extracting with unar: \(source.lastPathComponent, privacy: .public)")
 
-    let process = Process()
-    process.executableURL = unarURL
-
-    var args = ["-o", dest.path, "-q"]
+    var args = ["-o", dest.path]
     if let password, !password.isEmpty {
-      args.append(contentsOf: ["-p", password])
-      Self.logger.debug("unar using password (length=\(password.count))")
+      Self.logger.debug("unar using secure password prompt (length=\(password.count))")
     }
     args.append(source.path)
-    process.arguments = args
 
-    try await runProcess(process, progress: progress)
+    try await runProcessWithPassword(
+      toolURL: unarURL,
+      arguments: args,
+      password: password,
+      sourceURL: source,
+      totalUnits: nil,
+      progress: progress
+    )
   }
 
   private func extractWithUnarSelected(
@@ -366,19 +394,19 @@ extension DecompressionService {
     Self.logger.debug(
       "Extracting selected with unar: \(source.lastPathComponent, privacy: .public)")
 
-    let process = Process()
-    process.executableURL = unarURL
-
-    var args = ["-o", dest.path, "-q"]
+    var args = ["-o", dest.path]
     for entry in entries {
       args += ["-i", entry]
     }
-    if let password, !password.isEmpty {
-      args += ["-p", password]
-    }
     args += ["--", source.path]
-    process.arguments = args
 
-    try await runProcess(process, progress: progress)
+    try await runProcessWithPassword(
+      toolURL: unarURL,
+      arguments: args,
+      password: password,
+      sourceURL: source,
+      totalUnits: entries.count,
+      progress: progress
+    )
   }
 }

@@ -25,7 +25,7 @@ extension DecompressionService {
     process.executableURL = toolURL
     process.arguments = ["-l", url.path]
 
-    let output = try await runProcess(forOutput: process)
+    let output = try await runProcess(forOutput: process, sourceURL: url)
     return parseZipListOutput(output)
   }
 
@@ -81,7 +81,7 @@ extension DecompressionService {
       process.arguments = ["-tf", url.path]
     }
 
-    let output = try await runProcess(forOutput: process)
+    let output = try await runProcess(forOutput: process, sourceURL: url)
     return parseTarListOutput(output)
   }
 
@@ -107,7 +107,7 @@ extension DecompressionService {
     process.executableURL = toolURL
     process.arguments = [url.path]
 
-    let output = try await runProcess(forOutput: process)
+    let output = try await runProcess(forOutput: process, sourceURL: url)
     return parseUnarListOutput(output)
   }
 

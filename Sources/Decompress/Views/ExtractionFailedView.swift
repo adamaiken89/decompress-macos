@@ -33,7 +33,11 @@ struct ExtractionFailedView: View {
 
       HStack(spacing: DesignConstants.Spacing.sectionGroup) {
         Button(loc("Retry")) {
-          viewModel.reset()
+          if viewModel.lastBatchResult?.failures.isEmpty == false {
+            viewModel.retryFailures()
+          } else {
+            viewModel.extractAll()
+          }
         }
         .primaryButton()
         .keyboardShortcut(.return)

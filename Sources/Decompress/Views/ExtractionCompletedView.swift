@@ -205,8 +205,8 @@ struct ExtractionCompletedView: View {
       .disabled(batchResult.totalCount == 0)
 
       if !batchResult.allSucceeded {
-        Button(loc("Retry")) {
-          viewModel.reset()
+        Button(loc("Retry Failed")) {
+          viewModel.retryFailures()
         }
         .primaryButton()
         .keyboardShortcut(.return)

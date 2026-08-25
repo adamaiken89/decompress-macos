@@ -30,10 +30,14 @@ struct BatchResult: Sendable, Equatable {
   struct Failure: Sendable, Equatable {
     let sourceURL: URL
     let error: String
+    var isPasswordError: Bool
   }
 
   var totalCount: Int { successes.count + failures.count }
   var allSucceeded: Bool { failures.isEmpty }
+  var hasPasswordFailuresOnly: Bool {
+    !failures.isEmpty && successes.isEmpty && failures.allSatisfy(\.isPasswordError)
+  }
 }
 
 enum ExtractionState: Sendable, Equatable {

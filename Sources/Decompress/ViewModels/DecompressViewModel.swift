@@ -22,17 +22,23 @@ final class DecompressViewModel {
   var deleteArchiveAfterExtraction = false
   var isPasswordProtected = false
   var password = ""
+  var passwordError: String?
   var extractInPlace = false
   var extractionStartTime: Date?
   var lastFailedSourceURL: URL?
+  var lastBatchResult: BatchResult?
   var archiveContents: [ArchiveContent] = []
   var pendingQueue: [[URL]] = []
   var launchMode: LaunchMode = .standard
 
   var queueCount: Int { pendingQueue.count }
 
-  private let service = DecompressionService.shared
+  let service: DecompressionService
   private var extractionTask: Task<Void, Never>?
+
+  init(service: DecompressionService = .shared) {
+    self.service = service
+  }
 
   var isIdle: Bool {
     if case .idle = extractionState { return true }
@@ -62,6 +68,9 @@ final class DecompressViewModel {
   func cancelExtraction() {
     extractionTask?.cancel()
     extractionTask = nil
+    Task {
+      await service.cancelRunningProcesses()
+    }
     extractionState = .idle
     extractionStartTime = nil
     processNextInQueue()
@@ -69,20 +78,18 @@ final class DecompressViewModel {
 
   func addFiles(_ urls: [URL]) {
     let archiveURLs = urls.filter { url in
-      let format = ArchiveFormat.allCases.first { format in
-        format.fileExtensions.contains { ext in
-          url.lastPathComponent.lowercased().hasSuffix(".\(ext)")
-            || url.lastPathComponent.lowercased().contains(".\(ext)")
-        }
-      }
-      return format != nil
+      ArchiveFormatDetector.detectFormat(from: url) != nil
     }
 
     let filtered = archiveURLs.filter { url in
-      guard let info = splitPartInfo(for: url), info.partNumber > 1 else { return true }
+      guard let info = ArchiveFormatDetector.splitPartInfo(for: url), info.partNumber > 1 else {
+        return true
+      }
       let allCandidateURLs = selectedURLs + archiveURLs
       return !allCandidateURLs.contains { candidate in
-        guard candidate != url, let candidateInfo = splitPartInfo(for: candidate) else {
+        guard candidate != url,
+          let candidateInfo = ArchiveFormatDetector.splitPartInfo(for: candidate)
+        else {
           return false
         }
         return candidateInfo.groupKey == info.groupKey && candidateInfo.partNumber == 1
@@ -97,9 +104,12 @@ final class DecompressViewModel {
   }
 
   func checkForEncryptedArchives(_ urls: [URL]) {
-    for url in urls where service.isZipEncrypted(url) {
-      isPasswordProtected = true
-      return
+    for url in urls {
+      guard let format = ArchiveFormatDetector.detectFormat(from: url) else { continue }
+      if ArchiveFormatDetector.isEncrypted(url: url, format: format) == true {
+        isPasswordProtected = true
+        return
+      }
     }
   }
 
@@ -162,9 +172,19 @@ final class DecompressViewModel {
   }
 
   func extractAll(selectedEntries: [URL: Set<String>]? = nil) {
-    guard !selectedURLs.isEmpty else { return }
+    startExtraction(urls: selectedURLs, selectedEntries: selectedEntries)
+  }
 
-    let urls = selectedURLs
+  func retryFailures() {
+    guard let result = lastBatchResult, !result.failures.isEmpty else { return }
+    let urls = result.failures.map(\.sourceURL)
+    if result.hasPasswordFailuresOnly, isPasswordProtected, password.isEmpty { return }
+    startExtraction(urls: urls, selectedEntries: nil)
+  }
+
+  private func startExtraction(urls: [URL], selectedEntries: [URL: Set<String>]?) {
+    guard !urls.isEmpty else { return }
+
     let useExtractInPlace = extractInPlace
     let useAutoDir = autoExtractToSourceDir
     let useOutputDir = outputDirectoryURL
@@ -172,6 +192,7 @@ final class DecompressViewModel {
     let shouldTrash = deleteArchiveAfterExtraction
     let useSelectedEntries = selectedEntries
 
+    passwordError = nil
     extractionStartTime = Date()
     extractionState = .preparing
     extractionTask = Task {
@@ -199,6 +220,7 @@ final class DecompressViewModel {
         destinationFor: destinationFor,
         usePassword: usePassword,
         shouldTrash: shouldTrash,
+        allowNonEmptyDestination: useExtractInPlace,
         selectedEntries: useSelectedEntries
       )
       handleExtractionCompletion(result)
@@ -236,8 +258,18 @@ final class DecompressViewModel {
 
   private func handleExtractionCompletion(_ result: BatchResult) {
     extractionTask = nil
+    lastBatchResult = result
+
     if !pendingQueue.isEmpty {
       processNextInQueue()
+      return
+    }
+
+    if result.hasPasswordFailuresOnly {
+      isPasswordProtected = true
+      password = ""
+      passwordError = loc("Incorrect password. Try again.")
+      extractionState = .idle
       return
     }
 
@@ -276,8 +308,10 @@ final class DecompressViewModel {
     if selectedURLs.isEmpty {
       extractionState = .idle
       password = ""
+      passwordError = nil
       isPasswordProtected = false
       archiveContents = []
+      lastBatchResult = nil
     }
   }
 
@@ -285,36 +319,12 @@ final class DecompressViewModel {
     selectedURLs.removeAll()
     extractionState = .idle
     password = ""
+    passwordError = nil
     isPasswordProtected = false
     extractionStartTime = nil
     lastFailedSourceURL = nil
+    lastBatchResult = nil
     archiveContents = []
-  }
-}
-
-// MARK: - Archive helpers
-
-extension DecompressViewModel {
-  private func splitPartInfo(for url: URL) -> (groupKey: String, partNumber: Int)? {
-    let name = url.lastPathComponent
-
-    if let match = try? /^(.+)\.part(\d+)\./.firstMatch(in: name) {
-      return (String(match.1), Int(match.2) ?? 0)
-    }
-
-    if let match = try? /^(.+)\.(7z|zip)\.(\d{3})$/.firstMatch(in: name) {
-      return (String(match.1), Int(match.3) ?? 0)
-    }
-
-    if let match = try? /^(.+)\.r(\d{2})$/.firstMatch(in: name) {
-      return (String(match.1), Int(match.2) ?? 0)
-    }
-
-    if let match = try? /^(.+)\.(\d{3})$/.firstMatch(in: name) {
-      return (String(match.1), Int(match.2) ?? 0)
-    }
-
-    return nil
   }
 }
 
@@ -326,6 +336,7 @@ extension DecompressViewModel {
     destinationFor: (URL) -> URL,
     usePassword: String?,
     shouldTrash: Bool,
+    allowNonEmptyDestination: Bool,
     selectedEntries: [URL: Set<String>]? = nil
   ) async -> BatchResult {
     let totalArchives = urls.count
@@ -337,7 +348,8 @@ extension DecompressViewModel {
         failures.append(
           BatchResult.Failure(
             sourceURL: url,
-            error: String(format: loc("Could not detect format for %@"), url.lastPathComponent)
+            error: String(format: loc("Could not detect format for %@"), url.lastPathComponent),
+            isPasswordError: false
           ))
         continue
       }
@@ -352,6 +364,7 @@ extension DecompressViewModel {
           format: format,
           password: usePassword,
           selectedEntries: entriesForURL,
+          allowNonEmptyDestination: allowNonEmptyDestination,
           progressHandler: makeProgressHandler(index: index, totalArchives: totalArchives)
         )
 
@@ -360,6 +373,19 @@ extension DecompressViewModel {
         }
 
         successes.append(result)
+      } catch let error as ServiceError {
+        Logger(subsystem: "com.decompress", category: "viewmodel")
+          .error(
+            "Extraction failed: \(url.lastPathComponent, privacy: .public) error=\(error.localizedDescription, privacy: .public)"
+          )
+        var isPasswordError = false
+        if case .wrongPassword = error { isPasswordError = true }
+        failures.append(
+          BatchResult.Failure(
+            sourceURL: url,
+            error: error.localizedDescription,
+            isPasswordError: isPasswordError
+          ))
       } catch {
         Logger(subsystem: "com.decompress", category: "viewmodel")
           .error(
@@ -368,7 +394,8 @@ extension DecompressViewModel {
         failures.append(
           BatchResult.Failure(
             sourceURL: url,
-            error: error.localizedDescription
+            error: error.localizedDescription,
+            isPasswordError: false
           ))
       }
     }

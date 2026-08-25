@@ -8,6 +8,8 @@ enum ServiceError: Error, LocalizedError, Sendable {
   case processError(String)
   case processExit(String, Int32)
   case passwordRequired
+  case wrongPassword(URL)
+  case destinationNotEmpty(URL)
   case toolNotFound(String)
 
   var errorDescription: String? {
@@ -33,9 +35,49 @@ enum ServiceError: Error, LocalizedError, Sendable {
     case .passwordRequired:
       loc("Password is required for this archive")
 
+    case .wrongPassword(let url):
+      String(
+        format: loc("Incorrect password for %@"), url.lastPathComponent)
+
+    case .destinationNotEmpty(let url):
+      String(
+        format: loc("Destination already contains files: %@"),
+        url.lastPathComponent)
+
     case .toolNotFound(let name):
       String(format: loc("Required tool not found: %1$@. Install with: brew install %1$@"), name)
     }
+  }
+
+  static func classify(
+    tool: String,
+    status: Int32,
+    stderr: String,
+    stdout: String,
+    sourceURL: URL
+  ) -> ServiceError {
+    let combined = (stderr + "\n" + stdout).lowercased()
+    let passwordPatterns = [
+      "incorrect password",
+      "wrong password",
+      "password incorrect",
+      "bad password",
+      "cannot find valid passwords",
+      "encrypted file. aborted",
+      "enter password",
+      "password required",
+    ]
+    if passwordPatterns.contains(where: { combined.contains($0) })
+      || (tool == "unar" && status == 3)
+    {
+      return .wrongPassword(sourceURL)
+    }
+
+    if combined.contains("no space left on device") || combined.contains("disk full") {
+      return .extractionFailed(loc("Not enough disk space available"))
+    }
+
+    return .processExit(tool, status)
   }
 
   private static func exitCodeMessage(tool: String, code: Int32) -> String {
